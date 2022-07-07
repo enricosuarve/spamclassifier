@@ -1,8 +1,9 @@
 import numpy as np
 
-training_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
-print("Shape of the spam training data set:", training_spam.shape)
-print(training_spam)
+# training_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
+# print("Shape of the spam training data set:", training_spam.shape)
+# print(training_spam)
+
 
 testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
 print("Shape of the spam testing data set:", testing_spam.shape)
@@ -19,13 +20,23 @@ print(testing_spam)
 
 class SpamClassifier:
     def __init__(self, k):
+        print("I am initializing")
         self.k = k
+        training_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
+        print("Shape of the spam training data set:", training_spam.shape)
+        print(training_spam)
+
+        np.array()
 
     def train(self):
         pass
 
     def predict(self, data):
         return np.zeros(data.shape[0])
+
+    # def load_training_data(self):
+
+
 
 
 def create_classifier():
