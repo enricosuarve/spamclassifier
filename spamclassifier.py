@@ -6,9 +6,9 @@ import math
 # print(training_spam)
 
 
-testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
-print("Shape of the spam testing data set:", testing_spam.shape)
-print(testing_spam)
+# testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
+# print("Shape of the spam testing data set:", testing_spam.shape)
+# print(testing_spam)
 
 
 # This skeleton code simply classifies every input as ham
@@ -24,6 +24,13 @@ class SpamClassifier:
         print("I am initializing")
         self.k = k
         self.training_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
+
+        # #ACTUALLY GETS LESS ACCURATE IF I GIVE IT MORE TRAINING DATA.... (.658 BECOMES .632)
+        # extra_training_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
+        # print("training_spam shape: ", self.training_spam.shape)
+        # print("extra_training_spam shape: ", extra_training_spam.shape)
+        # self.training_spam = np.concatenate((self.training_spam, extra_training_spam), axis=0)
+
         print("Shape of the spam training data set:", self.training_spam.shape)
         print(self.training_spam)
         # self.log_class_priors = np.array(np.empty())
@@ -141,8 +148,8 @@ class SpamClassifier:
         self.log_class_conditional_likelihoods = theta
 
     def get_probability(self, class_num, message, log_class_priors, log_class_conditional_likelihoods):
-        print("log_class_conditional_likelihoods shape: ", log_class_conditional_likelihoods.shape)
-        print("message shape: ", message.shape)
+        #print("log_class_conditional_likelihoods shape: ", log_class_conditional_likelihoods.shape)
+        #print("message shape: ", message.shape)
         running_probability = 1
         i = 0
         for element in message:
@@ -156,11 +163,12 @@ class SpamClassifier:
                 running_probability *= math.log(1 - (math.e ** log_class_conditional_likelihoods[class_num, i]))
             i += 1
 
-        denominator = log_class_priors[class_num]
+        running_probability *= log_class_priors[class_num]
+        #denominator = log_class_priors[class_num]
         # print("denominator:", denominator)
         # perform calculation
-        probability = (running_probability / denominator)
-        return probability
+        #probability = (running_probability / denominator)
+        return running_probability
 
     # def predict(self, data):
     #     return np.zeros(data.shape[0])
