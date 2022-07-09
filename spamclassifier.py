@@ -26,11 +26,11 @@ class SpamClassifier:
         self.k = k
         self.training_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
 
-        # #ACTUALLY GETS LESS ACCURATE IF I GIVE IT MORE TRAINING DATA.... (.658 BECOMES .632)
-        # extra_training_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
-        # print("training_spam shape: ", self.training_spam.shape)
-        # print("extra_training_spam shape: ", extra_training_spam.shape)
-        # self.training_spam = np.concatenate((self.training_spam, extra_training_spam), axis=0)
+        #Add more training data
+        extra_training_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
+        print("training_spam shape: ", self.training_spam.shape)
+        print("extra_training_spam shape: ", extra_training_spam.shape)
+        self.training_spam = np.concatenate((self.training_spam, extra_training_spam), axis=0)
 
         print("Shape of the spam training data set:", self.training_spam.shape)
         print(self.training_spam)
