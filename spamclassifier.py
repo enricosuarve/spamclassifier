@@ -64,6 +64,9 @@ class SpamClassifier:
         log_c0_prior = math.log((num_rows - count_c1) / num_rows)
         log_c1_prior = math.log(count_c1 / num_rows)
         log_class_priors = np.array([log_c0_prior, log_c1_prior])
+
+        # log_class_priors = np.array([log_c1_prior, log_c0_prior])
+
         print("log_class_priors:", log_class_priors)
 
         # return log_class_priors
@@ -156,21 +159,27 @@ class SpamClassifier:
         for element in message:
             if element == 1:
                 # if element == class_num: # halves accuracy (not too unexpected)
-                running_probability *= log_class_conditional_likelihoods[class_num, i]
-            else:
-                # print("original probability: ", log_class_conditional_likelihoods[class_num,i])
-                # print("inverse log:", math.e ** log_class_conditional_likelihoods[class_num,i])
-                # print("opposite probability:", 1-(math.e ** log_class_conditional_likelihoods[class_num,i]))
-                # print("opposite log probability:", math.log(1-(math.e ** log_class_conditional_likelihoods[class_num,i])))
-                running_probability *= math.log(1 - (math.e ** log_class_conditional_likelihoods[class_num, i]))
+                running_probability += log_class_conditional_likelihoods[class_num, i]
+            # else:
+            #     # calculate probability that this element is zero for the chosen class by reversing
+            #     #       the probability in likelihoods
+            #     # print("original probability: ", log_class_conditional_likelihoods[class_num,i])
+            #     # print("inverse log:", math.e ** log_class_conditional_likelihoods[class_num,i])
+            #     # print("opposite probability:", 1-(math.e ** log_class_conditional_likelihoods[class_num,i]))
+            #     # print("opposite log probability:", math.log(1-(math.e ** log_class_conditional_likelihoods[class_num,i])))
+            #     running_probability *= math.log(1 - (math.e ** log_class_conditional_likelihoods[class_num, i]))
             i += 1
 
+        # DO I divide or multiply by the log_class_priors??
+
         running_probability *= log_class_priors[class_num]
-        # denominator = log_class_priors[class_num]
-        # print("denominator:", denominator)
-        # perform calculation
-        # probability = (running_probability / denominator)
         return running_probability
+
+        # denominator = log_class_priors[class_num]
+        # # print("denominator:", denominator)
+        # # perform calculation
+        # probability = (running_probability / denominator)
+        # return probability
 
     # def predict(self, data):
     #     return np.zeros(data.shape[0])
@@ -201,7 +210,7 @@ class SpamClassifier:
             class1_probability = self.get_probability(1, row, self.log_class_priors,
                                                       self.log_class_conditional_likelihoods)
             print("class1_probability: ", class1_probability)
-            probably_spam = class1_probability > class0_probability
+            probably_spam = class1_probability < class0_probability
             print("probably_spam: ", probably_spam)
 
             #        running_probability_1 = 1
@@ -256,18 +265,18 @@ def run_tests():
         were_good_results = predictions[were_good_index]
         # print(were_good_results)
         print("{} out of {} good emails were classed as spam ({:.2f}%)".format(np.sum(were_good_results),
-                                                                           were_good_results.shape[0],
-                                                                           np.sum(were_good_results) /
-                                                                           were_good_results.shape[0]
-                                                                           * 100))
+                                                                               were_good_results.shape[0],
+                                                                               np.sum(were_good_results) /
+                                                                               were_good_results.shape[0]
+                                                                               * 100))
         were_spam_index = np.where(test_labels == 1)
         were_spam_results = predictions[were_spam_index]
         # print(were_spam_results)
         print("{} out of {} spam emails were classed as spam ({:.2f}%)".format(np.sum(were_spam_results),
-                                                                           were_spam_results.shape[0],
-                                                                           np.sum(were_spam_results) /
-                                                                           were_spam_results.shape[0]
-                                                                           * 100))
+                                                                               were_spam_results.shape[0],
+                                                                               np.sum(were_spam_results) /
+                                                                               were_spam_results.shape[0]
+                                                                               * 100))
 
         print(f"Accuracy on test data is: {accuracy}")
 
