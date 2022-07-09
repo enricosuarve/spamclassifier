@@ -1,6 +1,7 @@
 import numpy as np
 import math
 
+
 # training_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
 # print("Shape of the spam training data set:", training_spam.shape)
 # print(training_spam)
@@ -148,12 +149,13 @@ class SpamClassifier:
         self.log_class_conditional_likelihoods = theta
 
     def get_probability(self, class_num, message, log_class_priors, log_class_conditional_likelihoods):
-        #print("log_class_conditional_likelihoods shape: ", log_class_conditional_likelihoods.shape)
-        #print("message shape: ", message.shape)
+        # print("log_class_conditional_likelihoods shape: ", log_class_conditional_likelihoods.shape)
+        # print("message shape: ", message.shape)
         running_probability = 1
         i = 0
         for element in message:
             if element == 1:
+                # if element == class_num: # halves accuracy (not too unexpected)
                 running_probability *= log_class_conditional_likelihoods[class_num, i]
             else:
                 # print("original probability: ", log_class_conditional_likelihoods[class_num,i])
@@ -164,10 +166,10 @@ class SpamClassifier:
             i += 1
 
         running_probability *= log_class_priors[class_num]
-        #denominator = log_class_priors[class_num]
+        # denominator = log_class_priors[class_num]
         # print("denominator:", denominator)
         # perform calculation
-        #probability = (running_probability / denominator)
+        # probability = (running_probability / denominator)
         return running_probability
 
     # def predict(self, data):
@@ -249,6 +251,24 @@ def run_tests():
 
         predictions = classifier.predict(test_data)
         accuracy = np.count_nonzero(predictions == test_labels) / test_labels.shape[0]
+
+        were_good_index = np.where(test_labels == 0)
+        were_good_results = predictions[were_good_index]
+        # print(were_good_results)
+        print("{} out of {} good emails were classed as spam ({:.2f}%)".format(np.sum(were_good_results),
+                                                                           were_good_results.shape[0],
+                                                                           np.sum(were_good_results) /
+                                                                           were_good_results.shape[0]
+                                                                           * 100))
+        were_spam_index = np.where(test_labels == 1)
+        were_spam_results = predictions[were_spam_index]
+        # print(were_spam_results)
+        print("{} out of {} spam emails were classed as spam ({:.2f}%)".format(np.sum(were_spam_results),
+                                                                           were_spam_results.shape[0],
+                                                                           np.sum(were_spam_results) /
+                                                                           were_spam_results.shape[0]
+                                                                           * 100))
+
         print(f"Accuracy on test data is: {accuracy}")
 
 
