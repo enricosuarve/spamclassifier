@@ -19,7 +19,7 @@ class SpamClassifier:
 
     def train(self, use_decision_tree=False):
         if use_decision_tree:
-            pass
+            self.train_id3_decision_tree(self.training_spam)
         else:
             self.estimate_log_class_priors(self.training_spam)
             self.estimate_log_class_conditional_likelihoods(self.training_spam)
@@ -147,6 +147,58 @@ class SpamClassifier:
                 message += 1
 
         return class_predictions
+
+    def train_id3_decision_tree(self, training_spam):
+        # 'ID3 decision tree generator
+        # ref https://medium.com/analytics-vidhya/entropy-calculation-information-gain-decision-tree-learning-771325d16f'
+        training_spam = np.unique(training_spam, axis=0)  # remove duplicate rows
+        print("test:", [i for i in range(0, training_spam.shape[1])])
+        training_spam = np.vstack(([i for i in range(-1, training_spam.shape[1] - 1)],
+                                   training_spam))  # add index ref header row
+        for S in range(1, training_spam.shape[1] - 1):
+            s0c0 = 0
+            s0c1 = 0
+            s1c0 = 0
+            s1c1 = 0
+            s0 = 0
+            s1 = 0
+            c0 = 0
+            c1 = 0
+            for i in range(1, training_spam.shape[0] - 1):
+                c = training_spam[i, 0]
+                for j in range(1, training_spam.shape[1] - 1):
+                    if j != S:  # skip the column being evaluated for entropy
+                        if training_spam[i][j] == 0:
+                            if c == 0:
+                                s0c0 += 1
+                            else:
+                                s0c1 += 1
+                        else:
+                            if c == 0:
+                                s1c0 += 1
+                            else:
+                                s1c1 += 1
+                s0 = s0c0 + s0c1
+                s1 = s1c0 + s1c1
+                c0 = s0c0 + s1c0
+                c1 = s0c1 + s1c1
+                total = c0 + c1
+                print("s0 = s0c0 + s0c1: ", s0)
+                print("s1 = s1c0 + s1c1: ", s1)
+                print("c0 = s0c0 + s1c0: ", c0)
+                print("c1 = s0c1 + s1c1: ", c1)
+
+                #maths value error if the input to log2 = zero; as the answer to the equation should just be zero if one size = 0 poss just shove in if statements to replace with zeros? see web page above for more info on the general formula
+                entropy = (c0 / total) * math.log2(c0 / total) + (c1 / total) * math.log2(c1 / total)
+                entropy_s0 = -((s0c0 / s0) * math.log2(s0c0 / s0) + (s0c1 / s0) * math.log2(s0c1 / s0))
+                entropy_s1 = -((s1c0 / s0) * math.log2(s1c0 / s0) + (s1c1 / s0) * math.log2(s1c1 / s0))
+                gain_s = entropy - ((s0 / total) * entropy_s0 + (s1 / total) * entropy_s1)
+
+                print("Gain for function column {} = {}".format(S, gain_s))
+
+                # note later if I get to function combinations that return spam or ham check through data to see which had
+                # more instances instead of accepting/rejecting outright
+                pass
 
 
 def create_classifier(use_decision_tree=False):
