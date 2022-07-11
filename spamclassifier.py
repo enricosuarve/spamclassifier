@@ -17,10 +17,12 @@ class SpamClassifier:
         print("Shape of the spam training data set:", self.training_spam.shape)
         print(self.training_spam)
 
-    def train(self):
-        self.estimate_log_class_priors(self.training_spam)
-        self.estimate_log_class_conditional_likelihoods(self.training_spam)
-        pass
+    def train(self, use_decision_tree=False):
+        if use_decision_tree:
+            pass
+        else:
+            self.estimate_log_class_priors(self.training_spam)
+            self.estimate_log_class_conditional_likelihoods(self.training_spam)
 
     def estimate_log_class_priors(self, data):
         """
@@ -109,7 +111,7 @@ class SpamClassifier:
         running_probability *= log_class_priors[class_num]
         return running_probability
 
-    def predict(self, data):
+    def predict(self, data, use_decision_tree=False):
         """
         Given a new data set with binary features, predict the corresponding
         response for each instance (row) of the new_data set.
@@ -125,31 +127,35 @@ class SpamClassifier:
         class_predictions = np.empty(data.shape[0])
 
         message = 0
-        for row in data:
-            print("Row: ", row)
-            # note from self consider making more accurate by using the inverse of the probability if a selection is NOT true for a feature and class
-            class0_probability = self.get_probability(0, row, self.log_class_priors,
-                                                      self.log_class_conditional_likelihoods)
-            print("class0_probability: ", class0_probability)
-            class1_probability = self.get_probability(1, row, self.log_class_priors,
-                                                      self.log_class_conditional_likelihoods)
-            print("class1_probability: ", class1_probability)
-            probably_spam = class1_probability < class0_probability
-            print("probably_spam: ", probably_spam)
 
-            class_predictions[message] = probably_spam
-            message += 1
+        if use_decision_tree:
+            pass
+        else:
+            for row in data:
+                print("Row: ", row)
+                # note from self consider making more accurate by using the inverse of the probability if a selection is NOT true for a feature and class
+                class0_probability = self.get_probability(0, row, self.log_class_priors,
+                                                          self.log_class_conditional_likelihoods)
+                print("class0_probability: ", class0_probability)
+                class1_probability = self.get_probability(1, row, self.log_class_priors,
+                                                          self.log_class_conditional_likelihoods)
+                print("class1_probability: ", class1_probability)
+                probably_spam = class1_probability < class0_probability
+                print("probably_spam: ", probably_spam)
+
+                class_predictions[message] = probably_spam
+                message += 1
 
         return class_predictions
 
 
-def create_classifier():
+def create_classifier(use_decision_tree=False):
     classifier = SpamClassifier(k=1)
-    classifier.train()
+    classifier.train(use_decision_tree)
     return classifier
 
 
-classifier = create_classifier()
+classifier = create_classifier(True)
 
 
 def run_tests():
@@ -161,7 +167,7 @@ def run_tests():
         test_data = testing_spam[:, 1:]
         test_labels = testing_spam[:, 0]
 
-        predictions = classifier.predict(test_data)
+        predictions = classifier.predict(test_data, True)
         accuracy = np.count_nonzero(predictions == test_labels) / test_labels.shape[0]
 
         were_good_index = np.where(test_labels == 0)
