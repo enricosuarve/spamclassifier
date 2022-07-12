@@ -39,13 +39,10 @@ class SpamClassifier:
 
         num_rows = data.shape[0] + 1  # +1 for laplace smoothing
         count_c1 = np.sum(data[:, 0]) + 1
-        # print("count_c1: ", count_c1)
-        # print("num_rows:   ", num_rows)
 
         log_c0_prior = math.log((num_rows - count_c1) / num_rows)
         log_c1_prior = math.log(count_c1 / num_rows)
         log_class_priors = np.array([log_c0_prior, log_c1_prior])
-        # print("log_class_priors:", log_class_priors)
 
         self.log_class_priors = log_class_priors
 
@@ -69,38 +66,25 @@ class SpamClassifier:
         # put together to create a 1D array of the sum of each element where C=1 (tested and correct in excel)
         c1_rows = data[np.nonzero(data[:, 0]), 1:]
         c1_numrows = c1_rows[0, :, 0].size
-        # print("c1_numrows: ", c1_numrows)
         c1_element_sums = np.array(np.sum(c1_rows[0, :], axis=0))
         if alpha > 0:
             c1_element_sums = np.add(1, c1_element_sums)  # add 1 to every element fpr laplace smoothing
-        # print("c1_element_sums,",c1_element_sums)
         c1_element_eccl = np.log(np.divide(c1_element_sums, c1_numrows))
-        # print("c1_element_eccl: ", c1_element_eccl, c1_element_eccl.shape)
-        # print("Test numpy log10 0.147: ", np.log10(0.147))
-        # print("Test math log 0.147: ", math.log(0.147))
 
         # now get rows where C=0 using idea from https://stackoverflow.com/questions/4588628/find-indices-of-elements-equal-to-zero-in-a-numpy-array
         #################################################
         c0_rows = data[np.where(data[:, 0] == 0)[0], 1:]
-        # with np.printoptions(threshold=np.inf):
-        #    print("c0_rows", c0_rows.shape, "\n", c0_rows)
         c0_numrows = c0_rows[:, 0].size
-        # print("c0_numrows: ", c0_numrows)
         c0_element_sums = np.array(np.sum(c0_rows, axis=0))
         if alpha > 0:
             c0_element_sums = np.add(1, c0_element_sums)  # add 1 to every element fpr laplace smoothing
-        # print("c0_element_sums,",c0_element_sums)
         c0_element_eccl = np.log(np.divide(c0_element_sums, c0_numrows))
-        # print("c0_element_eccl: ", c0_element_eccl, c0_element_eccl.shape)
 
         theta = np.array([c0_element_eccl, c1_element_eccl])
-        # print("theta: ", theta, theta.shape)
 
         self.log_class_conditional_likelihoods = theta
 
     def get_probability(self, class_num, message, log_class_priors, log_class_conditional_likelihoods):
-        # print("log_class_conditional_likelihoods shape: ", log_class_conditional_likelihoods.shape)
-        # print("message shape: ", message.shape)
         running_probability = 1
         i = 0
         for element in message:
@@ -157,13 +141,13 @@ class SpamClassifier:
         return self.generate_decision_tree(training_spam)
 
     def generate_decision_tree(self, training_spam):
-        training_spam = np.unique(training_spam, axis=0)  # remove duplicate rows
+        # training_spam = np.unique(training_spam, axis=0)  # remove duplicate rows
         gain_per_attribute = np.zeros((training_spam.shape[1] - 1, 2))
         max_gain = np.zeros(3)  # array used to store running highest gain
         #                                format: [index in current S, index in original, gain]
 
         for S in range(1, training_spam.shape[1]):
-            # print("checking index ", S)
+            print("checking index ", S)
             s0c0 = 0
             s0c1 = 0
             s1c0 = 0
@@ -197,7 +181,7 @@ class SpamClassifier:
 
             s_gain = self.calculate_gain(s0c0, s0c1, s1c0, s1c1, s0, s1, c0, c1, total)
 
-            # print("Gain for function column {} = {}".format(S, s_gain))
+            print("Gain for function column {} = {}".format(S, s_gain))
 
             if s_gain > max_gain[2]:
                 max_gain = [S, training_spam[0, S], s_gain]
@@ -213,23 +197,16 @@ class SpamClassifier:
         # s0_data = np.delete(training_spam[s0_rows], max_gain[0], axis=1)
         # s1_data = training_spam[s1_rows]
 
-        # following iterated OK but created extra array containers i.e. [49, [[52, [[18, [[3, [[14, [[19, [[21, [[....
-        # next_node = [self.generate_decision_tree(s0_data),
-        #              self.generate_decision_tree(s1_data)]
-        # branch = [max_gain[1], next_node]
-
-        # next_node = [self.generate_decision_tree(s0_data),
-        #              self.generate_decision_tree(s1_data)]
         branch = [max_gain[1], self.generate_decision_tree(s0_data),
                   self.generate_decision_tree(s1_data)]
         return branch
 
     def calculate_gain(self, s0c0, s0c1, s1c0, s1c1, s0, s1, c0, c1, total):
 
-        # print("s0 = s0c0 + s0c1: ", s0)
-        # print("s1 = s1c0 + s1c1: ", s1)
-        # print("c0 = s0c0 + s1c0: ", c0)
-        # print("c1 = s0c1 + s1c1: ", c1)
+        print("s0 = s0c0 + s0c1: ", s0)
+        print("s1 = s1c0 + s1c1: ", s1)
+        print("c0 = s0c0 + s1c0: ", c0)
+        print("c1 = s0c1 + s1c1: ", c1)
 
         # lambda to protect against dividing by or applying log2 to zero,
         #       confirms neither side is zero then returns entropy instance calculation
@@ -237,30 +214,28 @@ class SpamClassifier:
 
         # entropy = (c0 / total) * math.log2(c0 / total) + (c1 / total) * math.log2(c1 / total)
         entropy = -(entropy_instance(c0, total) + entropy_instance(c1, total))
-        # print("S_entropy: ", entropy)
+        print("S_entropy: ", entropy)
 
         # entropy_s0 = -((s0c0 / s0) * math.log2(s0c0 / s0) + (s0c1 / s0) * math.log2(s0c1 / s0))
         entropy_s0 = -(entropy_instance(s0c0, s0)) + entropy_instance(s0c1, s0)
-        # print("entropy_s0: ", entropy_s0)
+        print("entropy_s0: ", entropy_s0)
 
         # entropy_s1 = -((s1c0 / s0) * math.log2(s1c0 / s0) + (s1c1 / s0) * math.log2(s1c1 / s0))
         entropy_s1 = -(entropy_instance(s1c0, s0)) + entropy_instance(s1c1, s0)
-        # print("entropy_s1: ", entropy_s1)
+        print("entropy_s1: ", entropy_s1)
 
         gain = entropy - ((s0 / total) * entropy_s0 + (s1 / total) * entropy_s1)
-        # print("gain: {}\n", gain)
+        print("gain: {}\n", gain)
 
         return gain
 
     def split_on_attribute_value(self, input_table, attribute_index, value):
+        print("input table to split:\n",input_table)
         result_rows = np.insert(np.where(input_table[:, attribute_index] == value), 0, 0)
         result = np.delete(input_table[result_rows], attribute_index, axis=1)
         return result
 
     def parse_decision_tree(self, data):
-        # output = None
-        # current_branch = self.decision_tree
-        # current_branch_index = 0
         output = []
         for row in data:
             # poss move variable reset to here
@@ -285,9 +260,6 @@ class SpamClassifier:
                             if isinstance(current_branch[1][1], bool):
                                 row_output = current_branch[1][1]
                             current_branch = current_branch[1][1]
-                            # if isinstance(current_branch[2], str):
-                            #     row_output = current_branch[2]
-                            # current_branch = current_branch[2]
                     # print("current branch: ", current_branch)
                 else:
                     row_output = row[current_attribute]
@@ -340,5 +312,7 @@ def run_tests():
                                                                                * 100))
         print(f"Accuracy on test data is: {accuracy}")
 
+        # for i in range(predictions.size):
+        #     print("Index:{}  Prediction:{}  actual:{}".format(i,predictions[i], test_labels[i]))
 
 run_tests()
