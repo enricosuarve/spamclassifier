@@ -278,7 +278,8 @@ class SpamClassifier:
                         current_branch = current_branch[1]
                     else:  # ==1
                         if isinstance(current_branch[1], bool):
-                            row_output = current_branch[2]
+                            if isinstance(current_branch[2], bool):
+                                row_output = current_branch[2]
                             current_branch = current_branch[2]
                         else:
                             if isinstance(current_branch[1][1], bool):
