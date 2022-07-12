@@ -297,7 +297,7 @@ class SpamClassifier:
                     output.append(int(row_output is True))
                     print("prediction is SPAM: ", row_output)
         # go through decision tree array for each row
-        return output
+        return np.asarray(output)
 
 
 def create_classifier(use_decision_tree=False):
