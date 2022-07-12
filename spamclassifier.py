@@ -163,7 +163,7 @@ class SpamClassifier:
         #                                format: [index in current S, index in original, gain]
 
         for S in range(1, training_spam.shape[1]):
-            print("checking index ", S)
+            # print("checking index ", S)
             s0c0 = 0
             s0c1 = 0
             s1c0 = 0
@@ -191,13 +191,13 @@ class SpamClassifier:
 
             # return terminals if all classifications are the same
             if c0 == 0:
-                return "SPAM"
+                return True  # "SPAM"
             if c1 == 0:
-                return "HAM"
+                return False  # "HAM"
 
             s_gain = self.calculate_gain(s0c0, s0c1, s1c0, s1c1, s0, s1, c0, c1, total)
 
-            print("Gain for function column {} = {}".format(S, s_gain))
+            # print("Gain for function column {} = {}".format(S, s_gain))
 
             if s_gain > max_gain[2]:
                 max_gain = [S, training_spam[0, S], s_gain]
@@ -226,10 +226,10 @@ class SpamClassifier:
 
     def calculate_gain(self, s0c0, s0c1, s1c0, s1c1, s0, s1, c0, c1, total):
 
-        print("s0 = s0c0 + s0c1: ", s0)
-        print("s1 = s1c0 + s1c1: ", s1)
-        print("c0 = s0c0 + s1c0: ", c0)
-        print("c1 = s0c1 + s1c1: ", c1)
+        # print("s0 = s0c0 + s0c1: ", s0)
+        # print("s1 = s1c0 + s1c1: ", s1)
+        # print("c0 = s0c0 + s1c0: ", c0)
+        # print("c1 = s0c1 + s1c1: ", c1)
 
         # lambda to protect against dividing by or applying log2 to zero,
         #       confirms neither side is zero then returns entropy instance calculation
@@ -237,18 +237,18 @@ class SpamClassifier:
 
         # entropy = (c0 / total) * math.log2(c0 / total) + (c1 / total) * math.log2(c1 / total)
         entropy = -(entropy_instance(c0, total) + entropy_instance(c1, total))
-        print("S_entropy: ", entropy)
+        # print("S_entropy: ", entropy)
 
         # entropy_s0 = -((s0c0 / s0) * math.log2(s0c0 / s0) + (s0c1 / s0) * math.log2(s0c1 / s0))
         entropy_s0 = -(entropy_instance(s0c0, s0)) + entropy_instance(s0c1, s0)
-        print("entropy_s0: ", entropy_s0)
+        # print("entropy_s0: ", entropy_s0)
 
         # entropy_s1 = -((s1c0 / s0) * math.log2(s1c0 / s0) + (s1c1 / s0) * math.log2(s1c1 / s0))
         entropy_s1 = -(entropy_instance(s1c0, s0)) + entropy_instance(s1c1, s0)
-        print("entropy_s1: ", entropy_s1)
+        # print("entropy_s1: ", entropy_s1)
 
         gain = entropy - ((s0 / total) * entropy_s0 + (s1 / total) * entropy_s1)
-        print("gain: {}\n", gain)
+        # print("gain: {}\n", gain)
 
         return gain
 
@@ -258,32 +258,45 @@ class SpamClassifier:
         return result
 
     def parse_decision_tree(self, data):
-        output = None
-        current_branch = self.decision_tree
-        current_branch_index = 0
+        # output = None
+        # current_branch = self.decision_tree
+        # current_branch_index = 0
+        output = []
         for row in data:
-#poss move variable reset to here
+            # poss move variable reset to here
+            row_output = None
+            current_branch = self.decision_tree
 
-            while output == None:
+            while row_output == None:
                 current_attribute = current_branch[0]
                 current_value = row[current_attribute]
-                print("current_attribute {} = {}".format(current_attribute, current_value))
+                # print("current_attribute {} = {}".format(current_attribute, current_value))
                 if isinstance(current_value, np.int32):
                     if current_value == 0:
-                        if isinstance(current_branch[1], str):
-                            output = current_branch[1]
+                        if isinstance(current_branch[1], bool):
+                            row_output = current_branch[1]
                         current_branch = current_branch[1]
                     else:  # ==1
-                        if isinstance(current_branch[1][1], str):
-                          output = current_branch[1][1]
-                        current_branch = current_branch[1][1]
-                    print("current branch: ", current_branch)
+                        if isinstance(current_branch[1], bool):
+                            row_output = current_branch[2]
+                            current_branch = current_branch[2]
+                        else:
+                            if isinstance(current_branch[1][1], bool):
+                                row_output = current_branch[1][1]
+                            current_branch = current_branch[1][1]
+                            # if isinstance(current_branch[2], str):
+                            #     row_output = current_branch[2]
+                            # current_branch = current_branch[2]
+                    # print("current branch: ", current_branch)
                 else:
-                    output = row[current_attribute]
-                    print("Row is ", output)
+                    row_output = row[current_attribute]
+                    # print("Row is ", row_output)
                 # add piece to place decision in output array
+                if row_output is not None:
+                    output.append(int(row_output is True))
+                    print("prediction is SPAM: ", row_output)
         # go through decision tree array for each row
-        return output == "SPAM"
+        return output
 
 
 def create_classifier(use_decision_tree=False):
