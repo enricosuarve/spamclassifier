@@ -156,6 +156,7 @@ class SpamClassifier:
         training_spam = np.vstack(([i for i in range(-1, training_spam.shape[1] - 1)],
                                    training_spam))  # add index ref header row
         for S in range(1, training_spam.shape[1] - 1):
+            print("checking index ", S)
             s0c0 = 0
             s0c1 = 0
             s1c0 = 0
@@ -165,47 +166,47 @@ class SpamClassifier:
             c0 = 0
             c1 = 0
             for i in range(1, training_spam.shape[0] - 1):
-                c = training_spam[i, 0]
-                for j in range(1, training_spam.shape[1] - 1):
-                    if j != S:  # skip the column being evaluated for entropy
-                        if training_spam[i][j] == 0:
-                            if c == 0:
-                                s0c0 += 1
-                            else:
-                                s0c1 += 1
-                        else:
-                            if c == 0:
-                                s1c0 += 1
-                            else:
-                                s1c1 += 1
-                s0 = s0c0 + s0c1
-                s1 = s1c0 + s1c1
-                c0 = s0c0 + s1c0
-                c1 = s0c1 + s1c1
-                total = c0 + c1
-                print("checking index ",i)
-                print("s0 = s0c0 + s0c1: ", s0)
-                print("s1 = s1c0 + s1c1: ", s1)
-                print("c0 = s0c0 + s1c0: ", c0)
-                print("c1 = s0c1 + s1c1: ", c1)
+                if training_spam[i][S] == 0:
+                    if training_spam[i][0] == 0:
+                        s0c0 += 1
+                    else:
+                        s0c1 += 1
+                else:  # S=1
+                    if training_spam[i][0] == 0:
+                        s1c0 += 1
+                    else:
+                        s1c1 += 1
+            s_gain = self.calculate_gain(s0c0, s0c1, s1c0, s1c1)
+            print("Gain for function column {} = {}".format(S, s_gain))
 
-                # lambda to protect against dividing by or applying log2 to zero,
-                #       confirms neither side is zero then returns entropy instance calculation
-                entropy_instance = lambda x, y: 0 if x == 0 or y == 0 else (x / y) * math.log2(x / y)
-
-                entropy = entropy_instance(c0, total) + entropy_instance(c1, total)
-                # entropy = (c0 / total) * math.log2(c0 / total) + (c1 / total) * math.log2(c1 / total)
-                entropy_s0 = -(entropy_instance(s0c0, s0)) + entropy_instance(s0c1, s0)
-                # entropy_s0 = -((s0c0 / s0) * math.log2(s0c0 / s0) + (s0c1 / s0) * math.log2(s0c1 / s0))
-                entropy_s1 = -(entropy_instance(s1c0, s0)) + entropy_instance(s1c1, s0)
-                # entropy_s1 = -((s1c0 / s0) * math.log2(s1c0 / s0) + (s1c1 / s0) * math.log2(s1c1 / s0))
-                gain_s = entropy - ((s0 / total) * entropy_s0 + (s1 / total) * entropy_s1)
-
-                print("Gain for function column {} = {}".format(S, gain_s))
-
-                # note later if I get to function combinations that return spam or ham check through data to see which had
-                # more instances instead of accepting/rejecting outright
+            # note later if I get to function combinations that return spam or ham check through data to see which had
+            # more instances instead of accepting/rejecting outright
             pass
+
+    def calculate_gain(self, s0c0, s0c1, s1c0, s1c1):
+        s0 = s0c0 + s0c1
+        s1 = s1c0 + s1c1
+        c0 = s0c0 + s1c0
+        c1 = s0c1 + s1c1
+        total = c0 + c1
+
+        print("s0 = s0c0 + s0c1: ", s0)
+        print("s1 = s1c0 + s1c1: ", s1)
+        print("c0 = s0c0 + s1c0: ", c0)
+        print("c1 = s0c1 + s1c1: ", c1)
+
+        # lambda to protect against dividing by or applying log2 to zero,
+        #       confirms neither side is zero then returns entropy instance calculation
+        entropy_instance = lambda x, y: 0 if x == 0 or y == 0 else (x / y) * math.log2(x / y)
+
+        entropy = entropy_instance(c0, total) + entropy_instance(c1, total)
+        # entropy = (c0 / total) * math.log2(c0 / total) + (c1 / total) * math.log2(c1 / total)
+        entropy_s0 = -(entropy_instance(s0c0, s0)) + entropy_instance(s0c1, s0)
+        # entropy_s0 = -((s0c0 / s0) * math.log2(s0c0 / s0) + (s0c1 / s0) * math.log2(s0c1 / s0))
+        entropy_s1 = -(entropy_instance(s1c0, s0)) + entropy_instance(s1c1, s0)
+        # entropy_s1 = -((s1c0 / s0) * math.log2(s1c0 / s0) + (s1c1 / s0) * math.log2(s1c1 / s0))
+        gain = entropy - ((s0 / total) * entropy_s0 + (s1 / total) * entropy_s1)
+        return gain
 
 
 def create_classifier(use_decision_tree=False):
