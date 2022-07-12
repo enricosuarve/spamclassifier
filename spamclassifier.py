@@ -129,7 +129,7 @@ class SpamClassifier:
         message = 0
 
         if use_decision_tree:
-            pass
+            class_predictions = self.parse_decision_tree(data)
         else:
             for row in data:
                 print("Row: ", row)
@@ -191,9 +191,9 @@ class SpamClassifier:
 
             # return terminals if all classifications are the same
             if c0 == 0:
-                return 1 # causes error at l.215 {TypeError}Cannot interpret '2' as a data type
+                return "SPAM"
             if c1 == 0:
-                return 0
+                return "HAM"
 
             s_gain = self.calculate_gain(s0c0, s0c1, s1c0, s1c1, s0, s1, c0, c1, total)
 
@@ -213,7 +213,7 @@ class SpamClassifier:
         # s0_data = np.delete(training_spam[s0_rows], max_gain[0], axis=1)
         # s1_data = training_spam[s1_rows]
         next_node = [self.generate_decision_tree(s0_data),
-                             self.generate_decision_tree(s1_data)]
+                     self.generate_decision_tree(s1_data)]
         branch = [max_gain[1], next_node]
         return branch
 
@@ -249,6 +249,23 @@ class SpamClassifier:
         result_rows = np.insert(np.where(input_table[:, attribute_index] == value), 0, 0)
         result = np.delete(input_table[result_rows], attribute_index, axis=1)
         return result
+
+    def parse_decision_tree(self, data):
+        output = None
+        current_branch = self.decision_tree
+        current_branch_index = 0
+        for row in data:
+            while output == None:
+                current_attribute = current_branch[0]
+                current_value = row[current_attribute]
+                if isinstance(current_value, np.int32):
+                    current_branch = current_branch[row[current_attribute] == 1]
+                    print("current branch: ", current_branch)
+                else:
+                    output = row[current_attribute]
+                    print("Row is ", output)
+        # go through decision tree array for each row
+        return output == "SPAM"
 
 
 def create_classifier(use_decision_tree=False):
