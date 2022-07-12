@@ -191,7 +191,7 @@ class SpamClassifier:
 
             # return terminals if all classifications are the same
             if c0 == 0:
-                return 1
+                return 1 # causes error at l.215 {TypeError}Cannot interpret '2' as a data type
             if c1 == 0:
                 return 0
 
@@ -212,9 +212,9 @@ class SpamClassifier:
         # s1_rows = np.insert(np.where(training_spam[:, max_gain[0]] == 1), 0, 0)
         # s0_data = np.delete(training_spam[s0_rows], max_gain[0], axis=1)
         # s1_data = training_spam[s1_rows]
-        branch = np.array(max_gain[1],
-                          np.array(self.generate_decision_tree(s0_data),
-                                   self.generate_decision_tree(s1_data)))
+        next_node = np.array(self.generate_decision_tree(s0_data),
+                             self.generate_decision_tree(s1_data))
+        branch = np.array(max_gain[1], next_node)
         return branch
 
     def calculate_gain(self, s0c0, s0c1, s1c0, s1c1, s0, s1, c0, c1, total):
@@ -254,6 +254,7 @@ class SpamClassifier:
 def create_classifier(use_decision_tree=False):
     classifier = SpamClassifier(k=1)
     classifier.train(use_decision_tree)
+    print("decision tree: ", classifier.decision_tree)
     return classifier
 
 
