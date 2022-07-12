@@ -221,7 +221,7 @@ class SpamClassifier:
         # next_node = [self.generate_decision_tree(s0_data),
         #              self.generate_decision_tree(s1_data)]
         branch = [max_gain[1], self.generate_decision_tree(s0_data),
-                             self.generate_decision_tree(s1_data)]
+                  self.generate_decision_tree(s1_data)]
         return branch
 
     def calculate_gain(self, s0c0, s0c1, s1c0, s1c1, s0, s1, c0, c1, total):
@@ -262,15 +262,26 @@ class SpamClassifier:
         current_branch = self.decision_tree
         current_branch_index = 0
         for row in data:
+#poss move variable reset to here
+
             while output == None:
                 current_attribute = current_branch[0]
                 current_value = row[current_attribute]
+                print("current_attribute {} = {}".format(current_attribute, current_value))
                 if isinstance(current_value, np.int32):
-                    current_branch = current_branch[row[current_attribute] == 1]
+                    if current_value == 0:
+                        if isinstance(current_branch[1], str):
+                            output = current_branch[1]
+                        current_branch = current_branch[1]
+                    else:  # ==1
+                        if isinstance(current_branch[1][1], str):
+                          output = current_branch[1][1]
+                        current_branch = current_branch[1][1]
                     print("current branch: ", current_branch)
                 else:
                     output = row[current_attribute]
                     print("Row is ", output)
+                # add piece to place decision in output array
         # go through decision tree array for each row
         return output == "SPAM"
 
