@@ -7,7 +7,7 @@ class SpamClassifier:
         print("I am initializing")
         self.k = k
         self.training_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
-
+        self.decision_tree = np.empty(0)
         # #Add more 'training' data
         # extra_training_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
         # print("training_spam shape: ", self.training_spam.shape)
@@ -19,7 +19,7 @@ class SpamClassifier:
 
     def train(self, use_decision_tree=False):
         if use_decision_tree:
-            decision_tree = self.train_id3_decision_tree(self.training_spam)
+            self.decision_tree = self.train_id3_decision_tree(self.training_spam)
         else:
             self.estimate_log_class_priors(self.training_spam)
             self.estimate_log_class_conditional_likelihoods(self.training_spam)
@@ -205,10 +205,17 @@ class SpamClassifier:
             # note later if I get to function combinations that return spam or ham check through data to see which had
             # more instances instead of accepting/rejecting outright
             pass
-        branch = np.array(training_spam[0, S],np.array(self.generate_decision_tree(S=0 DATA, S=1 DATA)))
+
+        s0_data = self.split_on_attribute_value(training_spam, max_gain[0], 0)
+        s1_data = self.split_on_attribute_value(training_spam, max_gain[0], 1)
+        # s0_rows = np.insert(np.where(training_spam[:, max_gain[0]] == 0), 0, 0)
+        # s1_rows = np.insert(np.where(training_spam[:, max_gain[0]] == 1), 0, 0)
+        # s0_data = np.delete(training_spam[s0_rows], max_gain[0], axis=1)
+        # s1_data = training_spam[s1_rows]
+        branch = np.array(max_gain[1],
+                          np.array(self.generate_decision_tree(s0_data),
+                                   self.generate_decision_tree(s1_data)))
         return branch
-        print("gain_per_attribute:", gain_per_attribute)
-        print("max gain: ", max_gain)
 
     def calculate_gain(self, s0c0, s0c1, s1c0, s1c1, s0, s1, c0, c1, total):
 
@@ -237,6 +244,11 @@ class SpamClassifier:
         print("gain: {}\n", gain)
 
         return gain
+
+    def split_on_attribute_value(self, input_table, attribute_index, value):
+        result_rows = np.insert(np.where(input_table[:, attribute_index] == value), 0, 0)
+        result = np.delete(input_table[result_rows], attribute_index, axis=1)
+        return result
 
 
 def create_classifier(use_decision_tree=False):
