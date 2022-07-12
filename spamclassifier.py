@@ -183,22 +183,29 @@ class SpamClassifier:
                 c0 = s0c0 + s1c0
                 c1 = s0c1 + s1c1
                 total = c0 + c1
+                print("checking index ",i)
                 print("s0 = s0c0 + s0c1: ", s0)
                 print("s1 = s1c0 + s1c1: ", s1)
                 print("c0 = s0c0 + s1c0: ", c0)
                 print("c1 = s0c1 + s1c1: ", c1)
 
-                #maths value error if the input to log2 = zero; as the answer to the equation should just be zero if one size = 0 poss just shove in if statements to replace with zeros? see web page above for more info on the general formula
-                entropy = (c0 / total) * math.log2(c0 / total) + (c1 / total) * math.log2(c1 / total)
-                entropy_s0 = -((s0c0 / s0) * math.log2(s0c0 / s0) + (s0c1 / s0) * math.log2(s0c1 / s0))
-                entropy_s1 = -((s1c0 / s0) * math.log2(s1c0 / s0) + (s1c1 / s0) * math.log2(s1c1 / s0))
+                # lambda to protect against dividing by or applying log2 to zero,
+                #       confirms neither side is zero then returns entropy instance calculation
+                entropy_instance = lambda x, y: 0 if x == 0 or y == 0 else (x / y) * math.log2(x / y)
+
+                entropy = entropy_instance(c0, total) + entropy_instance(c1, total)
+                # entropy = (c0 / total) * math.log2(c0 / total) + (c1 / total) * math.log2(c1 / total)
+                entropy_s0 = -(entropy_instance(s0c0, s0)) + entropy_instance(s0c1, s0)
+                # entropy_s0 = -((s0c0 / s0) * math.log2(s0c0 / s0) + (s0c1 / s0) * math.log2(s0c1 / s0))
+                entropy_s1 = -(entropy_instance(s1c0, s0)) + entropy_instance(s1c1, s0)
+                # entropy_s1 = -((s1c0 / s0) * math.log2(s1c0 / s0) + (s1c1 / s0) * math.log2(s1c1 / s0))
                 gain_s = entropy - ((s0 / total) * entropy_s0 + (s1 / total) * entropy_s1)
 
                 print("Gain for function column {} = {}".format(S, gain_s))
 
                 # note later if I get to function combinations that return spam or ham check through data to see which had
                 # more instances instead of accepting/rejecting outright
-                pass
+            pass
 
 
 def create_classifier(use_decision_tree=False):
