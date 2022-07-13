@@ -145,7 +145,7 @@ class SpamClassifier:
         gain_per_attribute = np.zeros((training_spam.shape[1] - 1, 2))
         max_gain = np.zeros(3)  # array used to store running highest gain
         #                                format: [index in current S, index in original, gain]
-
+        print("calculating max gain for table:\n", training_spam)
         for S in range(1, training_spam.shape[1]):
             print("checking index ", S)
             s0c0 = 0
@@ -173,9 +173,9 @@ class SpamClassifier:
             c1 = s0c1 + s1c1
             total = c0 + c1
 
-            #add a line here to decide ham or spam based on majority rules if only 1 column at this point
-            if training_spam.shape[0]==2:
-                return s1 > s0 #
+            # add a line here to decide ham or spam based on majority rules if only 1 column at this point
+            if training_spam.shape[1] == 2:
+                return s1 > s0  #
 
             # return terminals if all classifications are the same
             if c0 == 0:
@@ -193,7 +193,7 @@ class SpamClassifier:
             # note later if I get to function combinations that return spam or ham check through data to see which had
             # more instances instead of accepting/rejecting outright
             pass
-
+        print("about to split data - attribute with max gain = {} in index {}".format(max_gain[1], max_gain[0]))
         s0_data = self.split_on_attribute_value(training_spam, max_gain[0], 0)
         s1_data = self.split_on_attribute_value(training_spam, max_gain[0], 1)
         # s0_rows = np.insert(np.where(training_spam[:, max_gain[0]] == 0), 0, 0)
@@ -234,7 +234,12 @@ class SpamClassifier:
         return gain
 
     def split_on_attribute_value(self, input_table, attribute_index, value):
-        print("input table to split:\n",input_table)
+        if input_table.shape[1] == 3:
+            print("table too small to split")
+            result = np.delete(input_table, value+1, axis=1)
+
+            return result
+        print("input table to split on value {} in attribute{}:\n{}".format(value, attribute_index, input_table))
         result_rows = np.insert(np.where(input_table[:, attribute_index] == value), 0, 0)
         result = np.delete(input_table[result_rows], attribute_index, axis=1)
         return result
@@ -318,5 +323,6 @@ def run_tests():
 
         # for i in range(predictions.size):
         #     print("Index:{}  Prediction:{}  actual:{}".format(i,predictions[i], test_labels[i]))
+
 
 run_tests()
