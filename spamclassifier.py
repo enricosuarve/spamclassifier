@@ -173,6 +173,10 @@ class SpamClassifier:
             c1 = s0c1 + s1c1
             total = c0 + c1
 
+            #add a line here to decide ham or spam based on majority rules if only 1 column at this point
+            if training_spam.shape[0]==2:
+                return s1 > s0 #
+
             # return terminals if all classifications are the same
             if c0 == 0:
                 return True  # "SPAM"
