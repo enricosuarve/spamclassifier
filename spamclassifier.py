@@ -141,7 +141,7 @@ class SpamClassifier:
         return self.generate_decision_tree(training_spam)
 
     def generate_decision_tree(self, training_spam):
-        # training_spam = np.unique(training_spam, axis=0)  # remove duplicate rows
+        training_spam = np.unique(training_spam, axis=0)  # remove duplicate rows
         gain_per_attribute = np.zeros((training_spam.shape[1] - 1, 2))
         max_gain = np.zeros(3)  # array used to store running highest gain
         #                                format: [index in current S, index in original, gain]
@@ -175,7 +175,7 @@ class SpamClassifier:
 
             # add a line here to decide ham or spam based on majority rules if only 1 column at this point
             if training_spam.shape[1] == 2:
-                return s1 > s0  #
+                return c1 > c0  #
 
             # return terminals if all classifications are the same
             if c0 == 0:
@@ -295,8 +295,8 @@ def run_tests():
     SKIP_TESTS = False
 
     if not SKIP_TESTS:
-        testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
-        # testing_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
+        # testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
+        testing_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
         test_data = testing_spam[:, 1:]
         test_labels = testing_spam[:, 0]
 
@@ -321,8 +321,8 @@ def run_tests():
                                                                                * 100))
         print(f"Accuracy on test data is: {accuracy}")
 
-        # for i in range(predictions.size):
-        #     print("Index:{}  Prediction:{}  actual:{}".format(i,predictions[i], test_labels[i]))
+        for i in range(predictions.size):
+            print("Index:{}  Prediction:{}  actual:{}".format(i,predictions[i], test_labels[i]))
 
 
 run_tests()
