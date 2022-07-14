@@ -141,31 +141,24 @@ class SpamClassifier:
         return self.generate_decision_tree(training_spam)
 
     def generate_decision_tree(self, training_spam):
-        # training_spam = np.unique(training_spam, axis=0)  # remove duplicate rows
+        training_spam = np.unique(training_spam, axis=0)  # remove duplicate rows
         gain_per_attribute = np.zeros((training_spam.shape[1] - 1, 2))
         max_gain = np.zeros(3)  # array used to store running highest gain
         #                                format: [index in current S, index in original, gain]
         print("calculating max gain for table:\n", training_spam)
         for S in range(1, training_spam.shape[1]):
             print("checking index ", S)
-            s0c0 = 0
-            s0c1 = 0
-            s1c0 = 0
-            s1c1 = 0
-            s0 = 0
-            s1 = 0
-            c0 = 0
-            c1 = 0
+            s0c0 = s0c1 = s1c0 = s1c1 = s0 = s1 = c0 = c1 = 0
             for i in range(1, training_spam.shape[0] - 1):
                 if training_spam[i][S] == 0:
                     if training_spam[i][0] == 0:
                         s0c0 += 1
-                    else:
+                    else:  # c=1
                         s0c1 += 1
                 else:  # S=1
                     if training_spam[i][0] == 0:
                         s1c0 += 1
-                    else:
+                    else:  # c=1
                         s1c1 += 1
             s0 = s0c0 + s0c1
             s1 = s1c0 + s1c1
@@ -218,25 +211,25 @@ class SpamClassifier:
 
         # entropy = (c0 / total) * math.log2(c0 / total) + (c1 / total) * math.log2(c1 / total)
         entropy = -(entropy_instance(c0, total) + entropy_instance(c1, total))
-        # print("S_entropy: ", entropy)
+        print("S_entropy: ", entropy)
 
         # entropy_s0 = -((s0c0 / s0) * math.log2(s0c0 / s0) + (s0c1 / s0) * math.log2(s0c1 / s0))
-        entropy_s0 = -(entropy_instance(s0c0, s0)) + entropy_instance(s0c1, s0)
-        # print("entropy_s0: ", entropy_s0)
+        entropy_s0 = -(entropy_instance(s0c0, s0) + entropy_instance(s0c1, s0))
+        print("entropy_s0: ", entropy_s0)
 
         # entropy_s1 = -((s1c0 / s0) * math.log2(s1c0 / s0) + (s1c1 / s0) * math.log2(s1c1 / s0))
-        entropy_s1 = -(entropy_instance(s1c0, s0)) + entropy_instance(s1c1, s0)
-        # print("entropy_s1: ", entropy_s1)
+        entropy_s1 = -(entropy_instance(s1c0, s1) + entropy_instance(s1c1, s1))
+        print("entropy_s1: ", entropy_s1)
 
         gain = entropy - ((s0 / total) * entropy_s0 + (s1 / total) * entropy_s1)
-        # print("gain: {}\n", gain)
+        print("gain: {}\n", gain)
 
         return gain
 
     def split_on_attribute_value(self, input_table, attribute_index, value):
         if input_table.shape[1] == 3:
             # print("table too small to split")
-            result = np.delete(input_table, value+1, axis=1)
+            result = np.delete(input_table, value + 1, axis=1)
 
             return result
         # print("input table to split on value {} in attribute{}:\n{}".format(value, attribute_index, input_table))
@@ -248,8 +241,8 @@ class SpamClassifier:
         output = []
         jj = -1
         for row in data:
-            jj+=1
-            print ("current row index: ",jj)
+            jj += 1
+            print("current row index: ", jj)
 
             # poss move variable reset to here
             row_output = None
@@ -273,7 +266,7 @@ class SpamClassifier:
                         if isinstance(current_branch[2], bool):
                             row_output = current_branch[2]
                         else:
-                            current_branch = current_branch[2]#changed from [1][1]
+                            current_branch = current_branch[2]  # changed from [1][1]
                     # print("current branch: ", current_branch)
                 else:
                     row_output = row[current_attribute]
@@ -300,8 +293,8 @@ def run_tests():
     SKIP_TESTS = False
 
     if not SKIP_TESTS:
-        # testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
-        testing_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
+        testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
+        # testing_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
         test_data = testing_spam[:, 1:]
         test_labels = testing_spam[:, 0]
 
@@ -327,7 +320,9 @@ def run_tests():
         print(f"Accuracy on test data is: {accuracy}")
 
         for i in range(predictions.size):
-            print("Index:{}  Prediction:{}  actual:{}".format(i,predictions[i], test_labels[i]))
+            print("Index:{}  Prediction:{}  actual:{}".format(i, predictions[i], test_labels[i]))
 
 
 run_tests()
+print("example gain = ", classifier.calculate_gain(
+    2, 6, 3, 3, 8, 6, 5, 9, 14))

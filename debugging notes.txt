@@ -18,3 +18,22 @@ as things stand, if I do not remove duplicate rows I get negative gains (is this
 Need to either check if negative gains are a thing (if not calculation may nee improving), if so need a way to ensure best gain is always picked (maybe start with -1000000 at gian per attribute or an empty array?)
 
 Checked and short answer is NO gain should never be negativehttps://www.google.com/url?sa=t&source=web&rct=j&url=https://stackoverflow.com/questions/3289589/can-the-value-of-information-gain-be-negative%23:~:text%3DFirst%252C%2520the%2520answer%2520is%2520no%252C%2520it%2520cannot%2520be%2520negative.&ved=2ahUKEwiK_PCTx_j4AhVXg1wKHdcOBZQQFnoECA4QBQ&usg=AOvVaw1x5IOEJJ67GRE1B5IyMaoM
+
+the entropy calculation for s1 in calculate_gain was wrong at line 228
+
+when removing duplicates has a higher accuracy of 83% (using training data for both training and testing)
+70 out of 613 good emails were classed as spam (11.42%)
+287 out of 387 spam emails were classed as spam (74.16%)
+Accuracy on test data is: 0.83
+
+check whole gain calculation next - compare calculate_gain to https://medium.com/analytics-vidhya/entropy-calculation-information-gain-decision-tree-learning-771325d16f
+print("example gain = ", classifier.calculate_gain(2, 6, 3, 3, 8, 6, 5, 9, 14))
+I get 0.8324.. - should be 0.048
+
+
+found an issue with the gain calculation (brackets in the wrong place in lines 217 & 221)
+corrected and massively increases accuracy testing training data against itself with duplicates removed (errors if leave in duplicates so check there is not something else that can be optimised)
+5 out of 613 good emails were classed as spam (0.82%)
+350 out of 387 spam emails were classed as spam (90.44%)
+Accuracy on test data is: 0.958
+
