@@ -37,3 +37,35 @@ corrected and massively increases accuracy testing training data against itself 
 350 out of 387 spam emails were classed as spam (90.44%)
 Accuracy on test data is: 0.958
 
+
+added logic to always pick the first attribute if entropy for all remaining data is zero
+
+Dupes OK training data for training and test data for testing:
+40 out of 301 good emails were classed as spam (13.29%)
+175 out of 199 spam emails were classed as spam (87.94%)
+Accuracy on test data is: 0.872
+
+no dupes duplicates allowed training data for training and testing:
+5 out of 613 good emails were classed as spam (0.82%)
+350 out of 387 spam emails were classed as spam (90.44%)
+Accuracy on test data is: 0.958
+
+Dupes OK training training data for training and testing:
+29 out of 613 good emails were classed as spam (4.73%)
+378 out of 387 spam emails were classed as spam (97.67%)
+Accuracy on test data is: 0.962
+
+No Dupes training data for training and test data for testing:
+15 out of 301 good emails were classed as spam (4.98%)
+163 out of 199 spam emails were classed as spam (81.91%)
+Accuracy on test data is: 0.898
+
+plan to improve
+1) train decision tree on training data
+2) apply decision tree to training data
+3) append decision tree prediction to training data
+4) train naive bayes
+5) run decision tree on test data
+6) apply decision tree to test data
+7) run naive bayes on test data
+result.....

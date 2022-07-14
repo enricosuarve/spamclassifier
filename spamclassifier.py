@@ -20,6 +20,23 @@ class SpamClassifier:
     def train(self, use_decision_tree=False):
         if use_decision_tree:
             self.decision_tree = self.train_id3_decision_tree(self.training_spam)
+            decision_tree_feedback = self.predict(self.training_spam)
+            enhanced_train_data = np.zeros(self.training_spam.shape[0], 1)
+            for x, y in zip(self.training_spam, decision_tree_feedback):
+                enhanced_train_data[:, 0] = np.concatenate(self.training_spam, decision_tree_feedback)
+
+            # example code of concatenating columns for reference
+            # reshaped_predictions = np.ones((class_predictions.shape[0], 1))
+            # # for row in class_predictions:
+            # #     reshaped_predictions
+            #
+            # for x, y in zip(class_predictions, reshaped_predictions[:, 0]):
+            #     reshaped_predictions[:, 0] = class_predictions
+            # data = np.hstack((data, reshaped_predictions))
+            # # for row in data:
+            # #     row.append(2)
+            # self.estimate_log_class_priors(data)
+            # self.estimate_log_class_conditional_likelihoods(data)
         else:
             self.estimate_log_class_priors(self.training_spam)
             self.estimate_log_class_conditional_likelihoods(self.training_spam)
@@ -114,6 +131,35 @@ class SpamClassifier:
 
         if use_decision_tree:
             class_predictions = self.parse_decision_tree(data)
+
+            # added following lines to try to feedback results of decision tree to training data, but realised that
+            #   I am putting in the wrong place
+
+            # reshaped_predictions = np.ones((class_predictions.shape[0], 1))
+            # # for row in class_predictions:
+            # #     reshaped_predictions
+            #
+            # for x, y in zip(class_predictions, reshaped_predictions[:, 0]):
+            #     reshaped_predictions[:, 0] = class_predictions
+            # data = np.hstack((data, reshaped_predictions))
+            # # for row in data:
+            # #     row.append(2)
+            # self.estimate_log_class_priors(data)
+            # self.estimate_log_class_conditional_likelihoods(data)
+            for row in data:
+                print("Row: ", row)
+                # note from self consider making more accurate by using the inverse of the probability if a selection is NOT true for a feature and class
+                class0_probability = self.get_probability(0, row, self.log_class_priors,
+                                                          self.log_class_conditional_likelihoods)
+                print("class0_probability: ", class0_probability)
+                class1_probability = self.get_probability(1, row, self.log_class_priors,
+                                                          self.log_class_conditional_likelihoods)
+                print("class1_probability: ", class1_probability)
+                probably_spam = class1_probability < class0_probability
+                print("probably_spam: ", probably_spam)
+
+                class_predictions[message] = probably_spam
+                message += 1
         else:
             for row in data:
                 print("Row: ", row)
