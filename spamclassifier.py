@@ -166,7 +166,7 @@ class SpamClassifier:
             c1 = s0c1 + s1c1
             total = c0 + c1
 
-            # add a line here to decide ham or spam based on majority rules if only 1 column at this point
+            # Decide ham or spam based on majority rules if only 1 column at this point
             if training_spam.shape[1] == 2:
                 return c1 > c0  #
 
@@ -187,6 +187,11 @@ class SpamClassifier:
             # more instances instead of accepting/rejecting outright
             pass
         print("about to split data - attribute with max gain = {} in index {}".format(max_gain[1], max_gain[0]))
+        if max_gain[0] == 0.0:
+            max_gain = [1,
+                        training_spam[0, 1],
+                        0]  # if there is no entropy on any attribute (for example all attributes have zero
+            #                positive values), no gain will have been selected - just select the first attribute.
         s0_data = self.split_on_attribute_value(training_spam, max_gain[0], 0)
         s1_data = self.split_on_attribute_value(training_spam, max_gain[0], 1)
         # s0_rows = np.insert(np.where(training_spam[:, max_gain[0]] == 0), 0, 0)
@@ -200,10 +205,10 @@ class SpamClassifier:
 
     def calculate_gain(self, s0c0, s0c1, s1c0, s1c1, s0, s1, c0, c1, total):
 
-        # print("s0 = s0c0 + s0c1: ", s0)
-        # print("s1 = s1c0 + s1c1: ", s1)
-        # print("c0 = s0c0 + s1c0: ", c0)
-        # print("c1 = s0c1 + s1c1: ", c1)
+        print("s0({}) = s0c0({}) + s0c1({})".format(s0, s0c0, s0c1))
+        print("s1({}) = s1c0({}) + s1c1({})".format(s1, s1c0, s1c1))
+        print("c0({}) = s0c0({}) + s1c0({})".format(c0, s0c0, s1c0))
+        print("c1({}) = s0c1({}) + s1c1({})".format(c1, s0c1, s1c1))
 
         # lambda to protect against dividing by or applying log2 to zero,
         #       confirms neither side is zero then returns entropy instance calculation
@@ -221,7 +226,7 @@ class SpamClassifier:
         entropy_s1 = -(entropy_instance(s1c0, s1) + entropy_instance(s1c1, s1))
         print("entropy_s1: ", entropy_s1)
 
-        gain = entropy - ((s0 / total) * entropy_s0 + (s1 / total) * entropy_s1)
+        gain = entropy - (((s0 / total) * entropy_s0) + ((s1 / total) * entropy_s1))
         print("gain: {}\n", gain)
 
         return gain
