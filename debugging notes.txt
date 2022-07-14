@@ -1,0 +1,18 @@
+if I remove line limiting to unique rows (line 144), I get an error:
+Traceback (most recent call last):
+  File "C:\Users\snpre\Google Drive\Bath CompSci MSc\Yr2 AI\Graded Assignment 3 Spam Filtering\spamclassifier\spamclassifier.py", line 329, in <module>
+    run_tests()
+  File "C:\Users\snpre\Google Drive\Bath CompSci MSc\Yr2 AI\Graded Assignment 3 Spam Filtering\spamclassifier\spamclassifier.py", line 304, in run_tests
+    predictions = classifier.predict(test_data, True)
+  File "C:\Users\snpre\Google Drive\Bath CompSci MSc\Yr2 AI\Graded Assignment 3 Spam Filtering\spamclassifier\spamclassifier.py", line 116, in predict
+    class_predictions = self.parse_decision_tree(data)
+  File "C:\Users\snpre\Google Drive\Bath CompSci MSc\Yr2 AI\Graded Assignment 3 Spam Filtering\spamclassifier\spamclassifier.py", line 256, in parse_decision_tree
+    current_value = row[current_attribute]
+IndexError: only integers, slices (`:`), ellipsis (`...`), numpy.newaxis (`None`) and integer or boolean arrays are valid indices
+
+above crash occurs as for some reason 0.0 has been entered in the decision tree as an attribute?
+
+also decision tree seems to go in number order suspiciously frequently
+
+as things stand, if I do not remove duplicate rows I get negative gains (is this correct?) and if there are only 2 remaining attributes by the time it gets to line 204 the max_gain table is still just full of the default 0.0 values; one of these gets transferred to the branch table which causes errors when parsing later on.
+Need to either check if negative gains are a thing (if not calculation may nee improving), if so need a way to ensure best gain is always picked (maybe start with -1000000 at gian per attribute or an empty array?)

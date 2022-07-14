@@ -141,13 +141,13 @@ class SpamClassifier:
         return self.generate_decision_tree(training_spam)
 
     def generate_decision_tree(self, training_spam):
-        training_spam = np.unique(training_spam, axis=0)  # remove duplicate rows
+        # training_spam = np.unique(training_spam, axis=0)  # remove duplicate rows
         gain_per_attribute = np.zeros((training_spam.shape[1] - 1, 2))
         max_gain = np.zeros(3)  # array used to store running highest gain
         #                                format: [index in current S, index in original, gain]
-        # print("calculating max gain for table:\n", training_spam)
+        print("calculating max gain for table:\n", training_spam)
         for S in range(1, training_spam.shape[1]):
-            # print("checking index ", S)
+            print("checking index ", S)
             s0c0 = 0
             s0c1 = 0
             s1c0 = 0
@@ -185,7 +185,7 @@ class SpamClassifier:
 
             s_gain = self.calculate_gain(s0c0, s0c1, s1c0, s1c1, s0, s1, c0, c1, total)
 
-            # print("Gain for function column {} = {}".format(S, s_gain))
+            print("Gain for function column {} = {}".format(S, s_gain))
 
             if s_gain > max_gain[2]:
                 max_gain = [S, training_spam[0, S], s_gain]
@@ -193,7 +193,7 @@ class SpamClassifier:
             # note later if I get to function combinations that return spam or ham check through data to see which had
             # more instances instead of accepting/rejecting outright
             pass
-        # print("about to split data - attribute with max gain = {} in index {}".format(max_gain[1], max_gain[0]))
+        print("about to split data - attribute with max gain = {} in index {}".format(max_gain[1], max_gain[0]))
         s0_data = self.split_on_attribute_value(training_spam, max_gain[0], 0)
         s1_data = self.split_on_attribute_value(training_spam, max_gain[0], 1)
         # s0_rows = np.insert(np.where(training_spam[:, max_gain[0]] == 0), 0, 0)
@@ -246,7 +246,11 @@ class SpamClassifier:
 
     def parse_decision_tree(self, data):
         output = []
+        jj = -1
         for row in data:
+            jj+=1
+            print ("current row index: ",jj)
+
             # poss move variable reset to here
             row_output = None
             current_branch = self.decision_tree
@@ -261,15 +265,15 @@ class SpamClassifier:
                             row_output = current_branch[1]
                         current_branch = current_branch[1]
                     else:  # ==1
-                        if isinstance(current_branch[1], bool):
-                            if isinstance(current_branch[2], bool):
-                                row_output = current_branch[2]
-                            current_branch = current_branch[2]
+                        # if isinstance(current_branch[1], bool):
+                        #     if isinstance(current_branch[2], bool):
+                        #         row_output = current_branch[2]
+                        #     current_branch = current_branch[2]
+                        # else:
+                        if isinstance(current_branch[2], bool):
+                            row_output = current_branch[2]
                         else:
-                            if isinstance(current_branch[2], bool):
-                                row_output = current_branch[2]
-                            else:
-                                current_branch = current_branch[2]#changed from [1][1]
+                            current_branch = current_branch[2]#changed from [1][1]
                     # print("current branch: ", current_branch)
                 else:
                     row_output = row[current_attribute]
@@ -296,8 +300,8 @@ def run_tests():
     SKIP_TESTS = False
 
     if not SKIP_TESTS:
-        testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
-        # testing_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
+        # testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
+        testing_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
         test_data = testing_spam[:, 1:]
         test_labels = testing_spam[:, 0]
 
