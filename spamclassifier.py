@@ -79,7 +79,7 @@ class SpamClassifier:
         """
         # put together to create a 1D array of the sum of each element where C=1 (tested and correct in excel)
         c1_rows = data[np.nonzero(data[:, 0]), 1:]
-        c1_numrows = c1_rows[0, :, 0].size
+        c1_numrows = c1_rows.shape[1]
         c1_element_sums = np.array(np.sum(c1_rows[0, :], axis=0))
         if alpha > 0:
             c1_element_sums = np.add(1, c1_element_sums)  # add 1 to every element fpr laplace smoothing
@@ -139,62 +139,6 @@ class SpamClassifier:
             print("Running naive bayes against enhanced test data")
 
             class_predictions = self.run_naive_bayes(enhanced_test_data)
-        # for row in enhanced_test_data:
-        #     print("Row: ", row)
-        #     # note from self consider making more accurate by using the inverse of the probability if a selection is NOT true for a feature and class
-        #     class0_probability = self.get_probability(0, row, self.log_class_priors,
-        #                                               self.log_class_conditional_likelihoods)
-        #     print("class0_probability: ", class0_probability)
-        #     class1_probability = self.get_probability(1, row, self.log_class_priors,
-        #                                               self.log_class_conditional_likelihoods)
-        #     print("class1_probability: ", class1_probability)
-        #     probably_spam = class1_probability < class0_probability
-        #     print("probably_spam: ", probably_spam)
-        #
-        #     class_predictions[message] = probably_spam
-        #     message += 1
-
-            # decision_tree_feedback = self.predict(self.training_spam, True)
-            # print("Appending decision tree predictions to training data")
-            # enhanced_train_data = np.zeros(self.training_spam.shape[1] + 1)
-            # for x in zip(self.training_spam, decision_tree_feedback):
-            #     print("combined row: ", np.append(x[0], x[1]))
-            #     enhanced_train_data = np.vstack((enhanced_train_data, np.append(x[0], x[1])))
-            # enhanced_train_data = np.delete(enhanced_train_data, (0), axis=0)
-            # print("Enhanced_train_data shape", enhanced_train_data.shape)
-            # print("Training naive bayes against enhanced data")
-            # self.estimate_log_class_priors(enhanced_train_data)
-            # self.estimate_log_class_conditional_likelihoods(enhanced_train_data)
-            # print("Naive bayes trained against enhanced data")
-
-            # added following lines to try to feedback results of decision tree to training data, but realised that
-            #   I am putting in the wrong place
-
-            # reshaped_predictions = np.ones((class_predictions.shape[0], 1))
-            # # for row in class_predictions:
-            # #     reshaped_predictions
-            #
-            # for x, y in zip(class_predictions, reshaped_predictions[:, 0]):
-            #     reshaped_predictions[:, 0] = class_predictions
-            # data = np.hstack((data, reshaped_predictions))
-            # # for row in data:
-            # #     row.append(2)
-            # self.estimate_log_class_priors(data)
-            # self.estimate_log_class_conditional_likelihoods(data)
-            # for row in data:
-            #     print("Row: ", row)
-            #     # note from self consider making more accurate by using the inverse of the probability if a selection is NOT true for a feature and class
-            #     class0_probability = self.get_probability(0, row, self.log_class_priors,
-            #                                               self.log_class_conditional_likelihoods)
-            #     print("class0_probability: ", class0_probability)
-            #     class1_probability = self.get_probability(1, row, self.log_class_priors,
-            #                                               self.log_class_conditional_likelihoods)
-            #     print("class1_probability: ", class1_probability)
-            #     probably_spam = class1_probability < class0_probability
-            #     print("probably_spam: ", probably_spam)
-            #
-            #     class_predictions[message] = probably_spam
-            #     message += 1
         else:
             class_predictions = self.run_naive_bayes(data)
             for row in data:
@@ -401,8 +345,8 @@ def run_tests():
     SKIP_TESTS = False
 
     if not SKIP_TESTS:
-        testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
-        # testing_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
+        # testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
+        testing_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
         test_data = testing_spam[:, 1:]
         test_labels = testing_spam[:, 0]
 
