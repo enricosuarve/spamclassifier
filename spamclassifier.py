@@ -314,7 +314,7 @@ def run_tests():
         test_labels = testing_spam[:, 0]
 
         # classifier = create_classifier(True)
-        predictions = classifier.predict(test_data, 2)
+        predictions = classifier.predict(test_data, 1)
         accuracy = np.count_nonzero(predictions == test_labels) / test_labels.shape[0]
 
         were_good_index = np.where(test_labels == 0)
