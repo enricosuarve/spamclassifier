@@ -17,8 +17,14 @@ class SpamClassifier:
         print("Shape of the spam training data set:", self.training_spam.shape)
         print(self.training_spam)
 
-    def train(self, use_decision_tree=False):
-        if use_decision_tree:
+    def train(self, use_decision_tree=1):
+        if use_decision_tree == 0:
+            self.estimate_log_class_priors(self.training_spam)
+            self.estimate_log_class_conditional_likelihoods(self.training_spam)
+        elif use_decision_tree == 1:
+            print("Training decision tree")
+            self.decision_tree = self.train_id3_decision_tree(self.training_spam)
+        else:
             print("Training decision tree")
             self.decision_tree = self.train_id3_decision_tree(self.training_spam)
             print("Parsing decision tree against training data")
@@ -34,9 +40,6 @@ class SpamClassifier:
             self.estimate_log_class_priors(enhanced_train_data)
             self.estimate_log_class_conditional_likelihoods(enhanced_train_data)
             print("Naive bayes trained against enhanced data")
-        else:
-            self.estimate_log_class_priors(self.training_spam)
-            self.estimate_log_class_conditional_likelihoods(self.training_spam)
 
     def estimate_log_class_priors(self, data):
         """
@@ -82,16 +85,16 @@ class SpamClassifier:
         c1_numrows = c1_rows.shape[1]
         c1_element_sums = np.array(np.sum(c1_rows[0, :], axis=0))
         if alpha > 0:
-            c1_element_sums = np.add(1, c1_element_sums)  # add 1 to every element fpr laplace smoothing
+            c1_element_sums = np.add(1, c1_element_sums)  # add 1 to every element for laplace smoothing
         c1_element_eccl = np.log(np.divide(c1_element_sums, c1_numrows))
 
         # now get rows where C=0 using idea from https://stackoverflow.com/questions/4588628/find-indices-of-elements-equal-to-zero-in-a-numpy-array
         #################################################
         c0_rows = data[np.where(data[:, 0] == 0)[0], 1:]
-        c0_numrows = c0_rows[:, 0].size
+        c0_numrows = c0_rows.shape[0]
         c0_element_sums = np.array(np.sum(c0_rows, axis=0))
         if alpha > 0:
-            c0_element_sums = np.add(1, c0_element_sums)  # add 1 to every element fpr laplace smoothing
+            c0_element_sums = np.add(1, c0_element_sums)  # add 1 to every element for laplace smoothing
         c0_element_eccl = np.log(np.divide(c0_element_sums, c0_numrows))
 
         theta = np.array([c0_element_eccl, c1_element_eccl])
@@ -109,7 +112,7 @@ class SpamClassifier:
         running_probability *= log_class_priors[class_num]
         return running_probability
 
-    def predict(self, data, use_decision_tree=False):
+    def predict(self, data, use_decision_tree=1):
         """
         Given a new data set with binary features, predict the corresponding
         response for each instance (row) of the new_data set.
@@ -126,20 +129,7 @@ class SpamClassifier:
 
         message = 0
 
-        if use_decision_tree:
-            print("Parsing decision tree against test data")
-            class_predictions = self.parse_decision_tree(data)
-            print("Adding decision tree predictions to test data")
-            enhanced_test_data = np.zeros(data.shape[1] + 1)
-            for x in zip(data, class_predictions):
-                # print("combined row: ", np.append(x[0], x[1]))
-                enhanced_test_data = np.vstack((enhanced_test_data, np.append(x[0], x[1])))
-            enhanced_test_data = np.delete(enhanced_test_data, (0), axis=0)
-
-            print("Running naive bayes against enhanced test data")
-
-            class_predictions = self.run_naive_bayes(enhanced_test_data)
-        else:
+        if use_decision_tree == 0:
             class_predictions = self.run_naive_bayes(data)
             for row in data:
                 print("Row: ", row)
@@ -155,6 +145,22 @@ class SpamClassifier:
 
                 class_predictions[message] = probably_spam
                 message += 1
+        elif use_decision_tree == 1:
+            print("Parsing decision tree against test data")
+            class_predictions = self.parse_decision_tree(data)
+        else:
+            print("Parsing decision tree against test data")
+            class_predictions = self.parse_decision_tree(data)
+            print("Adding decision tree predictions to test data")
+            enhanced_test_data = np.zeros(data.shape[1] + 1)
+            for x in zip(data, class_predictions):
+                # print("combined row: ", np.append(x[0], x[1]))
+                enhanced_test_data = np.vstack((enhanced_test_data, np.append(x[0], x[1])))
+            enhanced_test_data = np.delete(enhanced_test_data, (0), axis=0)
+
+            print("Running naive bayes against enhanced test data")
+
+            class_predictions = self.run_naive_bayes(enhanced_test_data)
 
         return class_predictions
 
@@ -331,26 +337,27 @@ class SpamClassifier:
         return class_predictions
 
 
-def create_classifier(use_decision_tree=False):
+def create_classifier(use_decision_tree=1):
     classifier = SpamClassifier(k=1)
     classifier.train(use_decision_tree)
     print("decision tree: ", classifier.decision_tree)
     return classifier
 
 
-classifier = create_classifier(True)
+classifier = create_classifier(2)
 
 
 def run_tests():
     SKIP_TESTS = False
 
     if not SKIP_TESTS:
-        # testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
-        testing_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
+        testing_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
+        # testing_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
         test_data = testing_spam[:, 1:]
         test_labels = testing_spam[:, 0]
 
-        predictions = classifier.predict(test_data, True)
+        # classifier = create_classifier(True)
+        predictions = classifier.predict(test_data,2)
         accuracy = np.count_nonzero(predictions == test_labels) / test_labels.shape[0]
 
         were_good_index = np.where(test_labels == 0)
