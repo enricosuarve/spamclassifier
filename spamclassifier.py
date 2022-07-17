@@ -4,21 +4,19 @@ import math
 
 class SpamClassifier:
     def __init__(self, k):
-        print("I am initializing")
+        self.log_class_conditional_likelihoods = None
+        self.log_class_priors = None
+        print("Classifier is initialising")
         self.k = k
         self.training_spam = np.loadtxt(open("data/training_spam.csv"), delimiter=",").astype(int)
         self.decision_tree = np.empty(0)
-        # #Add more 'training' data
-        # extra_training_spam = np.loadtxt(open("data/testing_spam.csv"), delimiter=",").astype(int)
-        # print("training_spam shape: ", self.training_spam.shape)
-        # print("extra_training_spam shape: ", extra_training_spam.shape)
-        # self.training_spam = np.concatenate((self.training_spam, extra_training_spam), axis=0)
 
         print("Shape of the spam training data set:", self.training_spam.shape)
-        print(self.training_spam)
+        # print(self.training_spam)
 
     def train(self, use_decision_tree=1):
         if use_decision_tree == 0:
+            print("Training naive bayes against training data")
             self.estimate_log_class_priors(self.training_spam)
             self.estimate_log_class_conditional_likelihoods(self.training_spam)
         elif use_decision_tree == 1:
@@ -35,7 +33,7 @@ class SpamClassifier:
                 # print("combined row: ", np.append(x[0], x[1]))
                 enhanced_train_data = np.vstack((enhanced_train_data, np.append(x[0], x[1])))
             enhanced_train_data = np.delete(enhanced_train_data, (0), axis=0)
-            print("Enhanced_train_data shape", enhanced_train_data.shape)
+            print("Enhanced training data shape: ", enhanced_train_data.shape)
             print("Training naive bayes against enhanced data")
             self.estimate_log_class_priors(enhanced_train_data)
             self.estimate_log_class_conditional_likelihoods(enhanced_train_data)
@@ -74,6 +72,8 @@ class SpamClassifier:
         if alpha > 0.
 
         :param data: a two-dimensional numpy-array with shape = [n_samples, 1 + n_features]
+        :param alpha: indicator used to determine whether laplace smoothing is used as per
+                        project requirements
 
         :return theta:
             a numpy array of shape = [2, n_features]. theta[j, i] corresponds to the
@@ -88,8 +88,8 @@ class SpamClassifier:
             c1_element_sums = np.add(1, c1_element_sums)  # add 1 to every element for laplace smoothing
         c1_element_eccl = np.log(np.divide(c1_element_sums, c1_numrows))
 
-        # now get rows where C=0 using idea from https://stackoverflow.com/questions/4588628/find-indices-of-elements-equal-to-zero-in-a-numpy-array
-        #################################################
+        # now get rows where C=0 using idea from 
+        #   https://stackoverflow.com/questions/4588628/find-indices-of-elements-equal-to-zero-in-a-numpy-array
         c0_rows = data[np.where(data[:, 0] == 0)[0], 1:]
         c0_numrows = c0_rows.shape[0]
         c0_element_sums = np.array(np.sum(c0_rows, axis=0))
@@ -117,34 +117,24 @@ class SpamClassifier:
         Given a new data set with binary features, predict the corresponding
         response for each instance (row) of the new_data set.
 
+        :param use_decision_tree: integer value to decide what form of test to run (must match
+            the form chosen in train method)
+            0 = Naive Bayes
+            1 = Decision Tree (default)
+            2 = Decision Tree and Naive Bayes
         :param data: a two-dimensional numpy-array with shape = [n_test_samples, n_features].
-        :param log_class_priors: a numpy array of length 2.
-        :param log_class_conditional_likelihoods: a numpy array of shape = [2, n_features].
-            theta[j, i] corresponds to the logarithm of the probability of feature i appearing
-            in a sample belonging to class j.
+
         :return class_predictions: a numpy array containing the class predictions for each row
             of new_data.
         """
-        class_predictions = np.empty(data.shape[0])
 
+        self.train(use_decision_tree)
+        class_predictions = np.empty(data.shape[0])
         message = 0
 
         if use_decision_tree == 0:
+            print("Running naive bayes against test data")
             class_predictions = self.run_naive_bayes(data)
-            for row in data:
-                print("Row: ", row)
-                # note from self consider making more accurate by using the inverse of the probability if a selection is NOT true for a feature and class
-                class0_probability = self.get_probability(0, row, self.log_class_priors,
-                                                          self.log_class_conditional_likelihoods)
-                print("class0_probability: ", class0_probability)
-                class1_probability = self.get_probability(1, row, self.log_class_priors,
-                                                          self.log_class_conditional_likelihoods)
-                print("class1_probability: ", class1_probability)
-                probably_spam = class1_probability < class0_probability
-                print("probably_spam: ", probably_spam)
-
-                class_predictions[message] = probably_spam
-                message += 1
         elif use_decision_tree == 1:
             print("Parsing decision tree against test data")
             class_predictions = self.parse_decision_tree(data)
@@ -154,12 +144,9 @@ class SpamClassifier:
             print("Adding decision tree predictions to test data")
             enhanced_test_data = np.zeros(data.shape[1] + 1)
             for x in zip(data, class_predictions):
-                # print("combined row: ", np.append(x[0], x[1]))
                 enhanced_test_data = np.vstack((enhanced_test_data, np.append(x[0], x[1])))
             enhanced_test_data = np.delete(enhanced_test_data, (0), axis=0)
-
             print("Running naive bayes against enhanced test data")
-
             class_predictions = self.run_naive_bayes(enhanced_test_data)
 
         return class_predictions
@@ -167,7 +154,6 @@ class SpamClassifier:
     def train_id3_decision_tree(self, training_spam):
         # 'ID3 decision tree generator
         # ref https://medium.com/analytics-vidhya/entropy-calculation-information-gain-decision-tree-learning-771325d16f'
-        print("test:", [i for i in range(0, training_spam.shape[1])])
         training_spam = np.vstack(([i for i in range(-1, training_spam.shape[1] - 1)],
                                    training_spam))  # add index ref header row
         return self.generate_decision_tree(training_spam)
@@ -177,9 +163,9 @@ class SpamClassifier:
         gain_per_attribute = np.zeros((training_spam.shape[1] - 1, 2))
         max_gain = np.zeros(3)  # array used to store running highest gain
         #                                format: [index in current S, index in original, gain]
-        print("calculating max gain for table:\n", training_spam)
+        # print("calculating max gain for table:\n", training_spam)
         for S in range(1, training_spam.shape[1]):
-            print("checking index ", S)
+            # print("checking index ", S)
             s0c0 = s0c1 = s1c0 = s1c1 = s0 = s1 = c0 = c1 = 0
             for i in range(1, training_spam.shape[0] - 1):
                 if training_spam[i][S] == 0:
@@ -209,27 +195,20 @@ class SpamClassifier:
                 return False  # "HAM"
 
             s_gain = self.calculate_gain(s0c0, s0c1, s1c0, s1c1, s0, s1, c0, c1, total)
-
-            print("Gain for function column {} = {}".format(S, s_gain))
+            # print("Gain for function column {} = {}".format(S, s_gain))
 
             if s_gain > max_gain[2]:
                 max_gain = [S, training_spam[0, S], s_gain]
             gain_per_attribute[S - 1] = [training_spam[0, S], s_gain]
-            # note later if I get to function combinations that return spam or ham check through data to see which had
-            # more instances instead of accepting/rejecting outright
-            pass
-        print("about to split data - attribute with max gain = {} in index {}".format(max_gain[1], max_gain[0]))
+        # print("about to split data - attribute with max gain = {} in index {}".format(max_gain[1], max_gain[0]))
+
+        # if there is no entropy on any attribute (for example all attributes have zero
+        #       positive values), no gain will have been selected - just select the first attribute.
         if max_gain[0] == 0.0:
-            max_gain = [1,
-                        training_spam[0, 1],
-                        0]  # if there is no entropy on any attribute (for example all attributes have zero
-            #                positive values), no gain will have been selected - just select the first attribute.
+            max_gain = [1, training_spam[0, 1], 0]
+
         s0_data = self.split_on_attribute_value(training_spam, max_gain[0], 0)
         s1_data = self.split_on_attribute_value(training_spam, max_gain[0], 1)
-        # s0_rows = np.insert(np.where(training_spam[:, max_gain[0]] == 0), 0, 0)
-        # s1_rows = np.insert(np.where(training_spam[:, max_gain[0]] == 1), 0, 0)
-        # s0_data = np.delete(training_spam[s0_rows], max_gain[0], axis=1)
-        # s1_data = training_spam[s1_rows]
 
         branch = [max_gain[1], self.generate_decision_tree(s0_data),
                   self.generate_decision_tree(s1_data)]
@@ -237,10 +216,10 @@ class SpamClassifier:
 
     def calculate_gain(self, s0c0, s0c1, s1c0, s1c1, s0, s1, c0, c1, total):
 
-        print("s0({}) = s0c0({}) + s0c1({})".format(s0, s0c0, s0c1))
-        print("s1({}) = s1c0({}) + s1c1({})".format(s1, s1c0, s1c1))
-        print("c0({}) = s0c0({}) + s1c0({})".format(c0, s0c0, s1c0))
-        print("c1({}) = s0c1({}) + s1c1({})".format(c1, s0c1, s1c1))
+        # print("s0({}) = s0c0({}) + s0c1({})".format(s0, s0c0, s0c1))
+        # print("s1({}) = s1c0({}) + s1c1({})".format(s1, s1c0, s1c1))
+        # print("c0({}) = s0c0({}) + s1c0({})".format(c0, s0c0, s1c0))
+        # print("c1({}) = s0c1({}) + s1c1({})".format(c1, s0c1, s1c1))
 
         # lambda to protect against dividing by or applying log2 to zero,
         #       confirms neither side is zero then returns entropy instance calculation
@@ -248,26 +227,21 @@ class SpamClassifier:
 
         # entropy = (c0 / total) * math.log2(c0 / total) + (c1 / total) * math.log2(c1 / total)
         entropy = -(entropy_instance(c0, total) + entropy_instance(c1, total))
-        print("S_entropy: ", entropy)
 
         # entropy_s0 = -((s0c0 / s0) * math.log2(s0c0 / s0) + (s0c1 / s0) * math.log2(s0c1 / s0))
         entropy_s0 = -(entropy_instance(s0c0, s0) + entropy_instance(s0c1, s0))
-        print("entropy_s0: ", entropy_s0)
 
         # entropy_s1 = -((s1c0 / s0) * math.log2(s1c0 / s0) + (s1c1 / s0) * math.log2(s1c1 / s0))
         entropy_s1 = -(entropy_instance(s1c0, s1) + entropy_instance(s1c1, s1))
-        print("entropy_s1: ", entropy_s1)
 
         gain = entropy - (((s0 / total) * entropy_s0) + ((s1 / total) * entropy_s1))
-        print("gain: {}\n", gain)
 
         return gain
 
     def split_on_attribute_value(self, input_table, attribute_index, value):
+        # If there are only 3 columns left there are not enough left to split - simply delete the other column
         if input_table.shape[1] == 3:
-            # print("table too small to split")
             result = np.delete(input_table, value + 1, axis=1)
-
             return result
         # print("input table to split on value {} in attribute{}:\n{}".format(value, attribute_index, input_table))
         result_rows = np.insert(np.where(input_table[:, attribute_index] == value), 0, 0)
@@ -279,40 +253,27 @@ class SpamClassifier:
         jj = -1
         for row in data:
             jj += 1
-            print("current row index: ", jj)
-
-            # poss move variable reset to here
             row_output = None
             current_branch = self.decision_tree
 
             while row_output == None:
                 current_attribute = current_branch[0]
                 current_value = row[current_attribute]
-                # print("current_attribute {} = {}".format(current_attribute, current_value))
                 if isinstance(current_value, np.int32):
                     if current_value == 0:
                         if isinstance(current_branch[1], bool):
                             row_output = current_branch[1]
                         current_branch = current_branch[1]
                     else:  # ==1
-                        # if isinstance(current_branch[1], bool):
-                        #     if isinstance(current_branch[2], bool):
-                        #         row_output = current_branch[2]
-                        #     current_branch = current_branch[2]
-                        # else:
                         if isinstance(current_branch[2], bool):
                             row_output = current_branch[2]
                         else:
-                            current_branch = current_branch[2]  # changed from [1][1]
-                    # print("current branch: ", current_branch)
+                            current_branch = current_branch[2]
                 else:
                     row_output = row[current_attribute]
-                    # print("Row is ", row_output)
-                # add piece to place decision in output array
                 if row_output is not None:
                     output.append(int(row_output is True))
-                    print("prediction is SPAM: ", row_output)
-        # go through decision tree array for each row
+                    # print("prediction is SPAM: ", row_output)
         return np.asarray(output)
 
     def run_naive_bayes(self, data):
@@ -320,31 +281,27 @@ class SpamClassifier:
         message = 0
 
         for row in data:
-            print("Row: ", row)
-            # note from self consider making more accurate by using the inverse of the probability if a selection is NOT true for a feature and class
+            # print("Row: ", row)
             class0_probability = self.get_probability(0, row, self.log_class_priors,
                                                       self.log_class_conditional_likelihoods)
-            print("class0_probability: ", class0_probability)
+            # print("class0_probability: ", class0_probability)
             class1_probability = self.get_probability(1, row, self.log_class_priors,
                                                       self.log_class_conditional_likelihoods)
-            print("class1_probability: ", class1_probability)
+            # print("class1_probability: ", class1_probability)
             probably_spam = class1_probability < class0_probability
-            print("probably_spam: ", probably_spam)
-
+            # print("probably_spam: ", probably_spam)
             class_predictions[message] = probably_spam
             message += 1
 
         return class_predictions
 
 
-def create_classifier(use_decision_tree=1):
+def create_classifier():
     classifier = SpamClassifier(k=1)
-    classifier.train(use_decision_tree)
-    print("decision tree: ", classifier.decision_tree)
     return classifier
 
 
-classifier = create_classifier(2)
+classifier = create_classifier()
 
 
 def run_tests():
@@ -357,7 +314,7 @@ def run_tests():
         test_labels = testing_spam[:, 0]
 
         # classifier = create_classifier(True)
-        predictions = classifier.predict(test_data,2)
+        predictions = classifier.predict(test_data, 2)
         accuracy = np.count_nonzero(predictions == test_labels) / test_labels.shape[0]
 
         were_good_index = np.where(test_labels == 0)
@@ -378,10 +335,9 @@ def run_tests():
                                                                                * 100))
         print(f"Accuracy on test data is: {accuracy}")
 
-        for i in range(predictions.size):
-            print("Index:{}  Prediction:{}  actual:{}".format(i, predictions[i], test_labels[i]))
+        # for i in range(predictions.size):
+        #     print("Index:{}  Prediction:{}  actual:{}".format(i, predictions[i], test_labels[i]))
 
 
 run_tests()
-print("example gain = ", classifier.calculate_gain(
-    2, 6, 3, 3, 8, 6, 5, 9, 14))
+
