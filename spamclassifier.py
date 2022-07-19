@@ -52,8 +52,8 @@ class SpamClassifier:
         :return log_class_priors: a numpy array of length two
         """
 
-        num_rows = data.shape[0] + 1  # +1 for laplace smoothing
-        count_c1 = np.sum(data[:, 0]) + 1
+        num_rows = data.shape[0]
+        count_c1 = np.sum(data[:, 0])
 
         log_c0_prior = math.log((num_rows - count_c1) / num_rows)
         log_c1_prior = math.log(count_c1 / num_rows)
@@ -84,18 +84,29 @@ class SpamClassifier:
         c1_rows = data[np.nonzero(data[:, 0]), 1:]
         c1_numrows = c1_rows.shape[1]
         c1_element_sums = np.array(np.sum(c1_rows[0, :], axis=0))
-        if alpha > 0:
-            c1_element_sums = np.add(1, c1_element_sums)  # add 1 to every element for laplace smoothing
-        c1_element_eccl = np.log(np.divide(c1_element_sums, c1_numrows))
+        c1_total_words = np.sum(c1_element_sums)
+        if alpha > 0:  # add 1 to every element for laplace smoothing
+            c1_element_sums = np.add(1, c1_element_sums)
+            c1_denominator = c1_total_words + c1_element_sums.shape[0]
+        else:
+            c1_denominator = c1_total_words + c1_element_sums.shape[0]
+
+        # c1_element_eccl = np.log(np.divide(c1_element_sums, c1_numrows))
+        c1_element_eccl = np.log(np.divide(c1_element_sums, c1_denominator))
 
         # now get rows where C=0 using idea from 
         #   https://stackoverflow.com/questions/4588628/find-indices-of-elements-equal-to-zero-in-a-numpy-array
         c0_rows = data[np.where(data[:, 0] == 0)[0], 1:]
         c0_numrows = c0_rows.shape[0]
         c0_element_sums = np.array(np.sum(c0_rows, axis=0))
-        if alpha > 0:
-            c0_element_sums = np.add(1, c0_element_sums)  # add 1 to every element for laplace smoothing
-        c0_element_eccl = np.log(np.divide(c0_element_sums, c0_numrows))
+        c0_total_words = np.sum(c0_element_sums)
+        if alpha > 0:  # add 1 to every element for laplace smoothing
+            c0_element_sums = np.add(1, c0_element_sums)
+            c0_denominator = c0_total_words + c0_element_sums.shape[0]
+        else:
+            c0_denominator = c0_total_words
+            # c0_element_eccl = np.log(np.divide(c0_element_sums, c0_numrows))
+        c0_element_eccl = np.log(np.divide(c0_element_sums, c0_denominator))
 
         theta = np.array([c0_element_eccl, c1_element_eccl])
 
@@ -109,7 +120,7 @@ class SpamClassifier:
                 running_probability += log_class_conditional_likelihoods[class_num, i]
             i += 1
 
-        running_probability *= log_class_priors[class_num]
+        running_probability += log_class_priors[class_num]
         return running_probability
 
     def predict(self, data, use_decision_tree=1):
@@ -288,7 +299,7 @@ class SpamClassifier:
             class1_probability = self.get_probability(1, row, self.log_class_priors,
                                                       self.log_class_conditional_likelihoods)
             # print("class1_probability: ", class1_probability)
-            probably_spam = class1_probability < class0_probability
+            probably_spam = class1_probability > class0_probability
             # print("probably_spam: ", probably_spam)
             class_predictions[message] = probably_spam
             message += 1
@@ -314,7 +325,7 @@ def run_tests():
         test_labels = testing_spam[:, 0]
 
         # classifier = create_classifier(True)
-        predictions = classifier.predict(test_data, 1)
+        predictions = classifier.predict(test_data, 2)
         accuracy = np.count_nonzero(predictions == test_labels) / test_labels.shape[0]
 
         were_good_index = np.where(test_labels == 0)
@@ -340,4 +351,3 @@ def run_tests():
 
 
 run_tests()
-
