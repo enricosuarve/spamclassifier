@@ -56,7 +56,9 @@ class SpamClassifier:
         count_c1 = np.sum(data[:, 0])
 
         log_c0_prior = math.log((num_rows - count_c1) / num_rows)
+        print("log_c0_prior: ", log_c0_prior)
         log_c1_prior = math.log(count_c1 / num_rows)
+        print("log_c1_prior: ", log_c1_prior)
         log_class_priors = np.array([log_c0_prior, log_c1_prior])
 
         self.log_class_priors = log_class_priors
@@ -80,48 +82,42 @@ class SpamClassifier:
             logarithm of the probability of feature i appearing in a sample belonging
             to class j.
         """
-        # put together to create a 1D array of the sum of each element where C=1 (tested and correct in excel)
-        c1_rows = data[np.nonzero(data[:, 0]), 1:]
-        c1_numrows = c1_rows.shape[1]
-        c1_element_sums = np.array(np.sum(c1_rows[0, :], axis=0))
-        c1_total_words = np.sum(c1_element_sums)
-        if alpha > 0:  # add 1 to every element for laplace smoothing
-            c1_element_sums = np.add(1, c1_element_sums)
-            c1_denominator = c1_total_words + c1_element_sums.shape[0]
-        else:
-            c1_denominator = c1_total_words + c1_element_sums.shape[0]
 
-        # c1_element_eccl = np.log(np.divide(c1_element_sums, c1_numrows))
-        c1_element_eccl = np.log(np.divide(c1_element_sums, c1_denominator))
-
-        # now get rows where C=0 using idea from 
-        #   https://stackoverflow.com/questions/4588628/find-indices-of-elements-equal-to-zero-in-a-numpy-array
-        c0_rows = data[np.where(data[:, 0] == 0)[0], 1:]
-        c0_numrows = c0_rows.shape[0]
-        c0_element_sums = np.array(np.sum(c0_rows, axis=0))
-        c0_total_words = np.sum(c0_element_sums)
-        if alpha > 0:  # add 1 to every element for laplace smoothing
-            c0_element_sums = np.add(1, c0_element_sums)
-            c0_denominator = c0_total_words + c0_element_sums.shape[0]
-        else:
-            c0_denominator = c0_total_words
-            # c0_element_eccl = np.log(np.divide(c0_element_sums, c0_numrows))
-        c0_element_eccl = np.log(np.divide(c0_element_sums, c0_denominator))
+        c0_element_eccl = self.estimate_single_log_class_conditional_likelihood(data, 0, alpha)
+        c1_element_eccl = self.estimate_single_log_class_conditional_likelihood(data, 1, alpha)
 
         theta = np.array([c0_element_eccl, c1_element_eccl])
-
+        # print("theta: ", theta)
         self.log_class_conditional_likelihoods = theta
 
-    def get_probability(self, class_num, message, log_class_priors, log_class_conditional_likelihoods):
-        running_probability = 1
-        i = 0
-        for element in message:
-            if element == 1:
-                running_probability += log_class_conditional_likelihoods[class_num, i]
-            i += 1
+    def estimate_single_log_class_conditional_likelihood(self, data, c_index, alpha):
+        # put together to create a 1D array of the sum of each element where C=1 (tested and correct in excel)
+        c_rows = data[np.where(data[:, 0] == c_index)[0], 1:]
+        c_numrows = c_rows.shape[0]
+        c_element_sums = np.array(np.sum(c_rows, axis=0))
+        c_total_words = np.sum(c_element_sums)
+        if alpha > 0:  # add 1 to every zero element and its denominator for laplace smoothing
+            for i in range(c_element_sums.shape[0]):
+                if c_element_sums[i] == 0:
+                    c_element_sums[i] = 1
+            # c1_element_sums = np.add(1, c1_element_sums)
+            c_denominator = c_total_words + c_element_sums.shape[0]
+        else:
+            c1_denominator = c_total_words + c_element_sums.shape[0]
 
-        running_probability += log_class_priors[class_num]
-        return running_probability
+        c_element_eccl = np.log(np.divide(c_element_sums, c_denominator))
+        return c_element_eccl
+
+    def run_naive_bayes(self, data):
+        class_predictions = np.empty(data.shape[0])
+        message = 0
+
+        for row in data:
+            class0_probability = np.sum(self.log_class_conditional_likelihoods[0] * row) + self.log_class_priors[0]
+            class1_probability = np.sum(self.log_class_conditional_likelihoods[1] * row) + self.log_class_priors[1]
+            class_predictions[message] = class1_probability > class0_probability
+            message += 1
+        return class_predictions
 
     def predict(self, data, use_decision_tree=1):
         """
@@ -287,25 +283,6 @@ class SpamClassifier:
                     # print("prediction is SPAM: ", row_output)
         return np.asarray(output)
 
-    def run_naive_bayes(self, data):
-        class_predictions = np.empty(data.shape[0])
-        message = 0
-
-        for row in data:
-            # print("Row: ", row)
-            class0_probability = self.get_probability(0, row, self.log_class_priors,
-                                                      self.log_class_conditional_likelihoods)
-            # print("class0_probability: ", class0_probability)
-            class1_probability = self.get_probability(1, row, self.log_class_priors,
-                                                      self.log_class_conditional_likelihoods)
-            # print("class1_probability: ", class1_probability)
-            probably_spam = class1_probability > class0_probability
-            # print("probably_spam: ", probably_spam)
-            class_predictions[message] = probably_spam
-            message += 1
-
-        return class_predictions
-
 
 def create_classifier():
     classifier = SpamClassifier(k=1)
@@ -325,7 +302,7 @@ def run_tests():
         test_labels = testing_spam[:, 0]
 
         # classifier = create_classifier(True)
-        predictions = classifier.predict(test_data, 2)
+        predictions = classifier.predict(test_data, 0)
         accuracy = np.count_nonzero(predictions == test_labels) / test_labels.shape[0]
 
         were_good_index = np.where(test_labels == 0)
