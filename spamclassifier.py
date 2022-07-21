@@ -15,7 +15,7 @@ class SpamClassifier:
         # print(self.training_spam)
 
     def train(self, use_decision_tree=1):
-        if use_decision_tree == 0:
+        if use_decision_tree in (0, 3):
             print("Training naive bayes against training data")
             self.estimate_log_class_priors(self.training_spam)
             self.estimate_log_class_conditional_likelihoods(self.training_spam)
@@ -56,9 +56,9 @@ class SpamClassifier:
         count_c1 = np.sum(data[:, 0])
 
         log_c0_prior = math.log((num_rows - count_c1) / num_rows)
-        print("log_c0_prior: ", log_c0_prior)
+        # print("log_c0_prior: ", log_c0_prior)
         log_c1_prior = math.log(count_c1 / num_rows)
-        print("log_c1_prior: ", log_c1_prior)
+        # print("log_c1_prior: ", log_c1_prior)
         log_class_priors = np.array([log_c0_prior, log_c1_prior])
 
         self.log_class_priors = log_class_priors
@@ -95,27 +95,29 @@ class SpamClassifier:
         c_rows = data[np.where(data[:, 0] == c_index)[0], 1:]
         c_numrows = c_rows.shape[0]
         c_element_sums = np.array(np.sum(c_rows, axis=0))
-        c_total_words = np.sum(c_element_sums)
         if alpha > 0:  # add 1 to every zero element and its denominator for laplace smoothing
             for i in range(c_element_sums.shape[0]):
                 if c_element_sums[i] == 0:
                     c_element_sums[i] = 1
-            # c1_element_sums = np.add(1, c1_element_sums)
-            c_denominator = c_total_words + c_element_sums.shape[0]
-        else:
-            c1_denominator = c_total_words + c_element_sums.shape[0]
+        c_total_words = np.sum(c_element_sums)
+        c_denominator = c_total_words + c_element_sums.shape[0]
+        c_element_lccl = np.log(np.divide(c_element_sums, c_denominator))
+        # print("Class {}: c_total_words:{}, c_denominator:{}, c_element_lccl:{}".format(
+        #     c_index, c_total_words, c_denominator, c_element_lccl))
 
-        c_element_eccl = np.log(np.divide(c_element_sums, c_denominator))
-        return c_element_eccl
+        return c_element_lccl
 
-    def run_naive_bayes(self, data):
+    def run_naive_bayes(self, data, use_logistic_regression=False):
         class_predictions = np.empty(data.shape[0])
         message = 0
 
         for row in data:
             class0_probability = np.sum(self.log_class_conditional_likelihoods[0] * row) + self.log_class_priors[0]
             class1_probability = np.sum(self.log_class_conditional_likelihoods[1] * row) + self.log_class_priors[1]
-            class_predictions[message] = class1_probability > class0_probability
+            if use_logistic_regression:
+                class_predictions[message] = (class0_probability / class1_probability) > 1.05
+            else:
+                class_predictions[message] = class1_probability > class0_probability
             message += 1
         return class_predictions
 
@@ -139,9 +141,9 @@ class SpamClassifier:
         class_predictions = np.empty(data.shape[0])
         message = 0
 
-        if use_decision_tree == 0:
+        if use_decision_tree in (0, 3):
             print("Running naive bayes against test data")
-            class_predictions = self.run_naive_bayes(data)
+            class_predictions = self.run_naive_bayes(data, use_decision_tree == 3)
         elif use_decision_tree == 1:
             print("Parsing decision tree against test data")
             class_predictions = self.parse_decision_tree(data)
@@ -302,7 +304,8 @@ def run_tests():
         test_labels = testing_spam[:, 0]
 
         # classifier = create_classifier(True)
-        predictions = classifier.predict(test_data, 0)
+        predictions = classifier.predict(test_data, 1)
+
         accuracy = np.count_nonzero(predictions == test_labels) / test_labels.shape[0]
 
         were_good_index = np.where(test_labels == 0)
